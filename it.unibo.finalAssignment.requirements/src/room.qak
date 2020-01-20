@@ -1,0 +1,43 @@
+System smartcleaner
+
+Dispatch suspend   : suspend(X)
+
+
+Context ctxWRoom ip [ host= "localhost" port= 8020 ]  
+Context ctxRobot ip [ host= "192.168.1.108" port= 8018 ]  
+
+ExternalQActor detector context ctxRobot
+
+QActor roomagent context ctxWRoom { 
+	[" val TVOCHighThreshold = 200 "]
+	
+	State start initial {  
+		println("roomagent start")
+	}
+	Goto notallerted
+	
+	State notallerted {
+	}
+	
+	State allerting {
+		forward detector -m suspend: suspend(true)
+	}
+	Goto allerted
+	
+	State allerted {
+	}
+}
+
+QActor plasticbox context ctxWRoom { 
+	[" val NPB = 10
+	   var SpaceAvailable = NPB "]
+	   
+	State start initial {  
+		println("plasticbox start")
+	}
+	Goto ready
+	
+	State ready {
+		//update remaining space and make it available
+	}
+}

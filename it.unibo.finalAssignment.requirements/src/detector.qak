@@ -1,0 +1,45 @@
+System smartcleaner
+
+Dispatch explore   : explore(X)
+Dispatch suspend   : suspend(X)
+Dispatch terminate : terminate(X)
+
+Context ctxRobot ip [ host= "localhost" port= 8018 ]  
+Context ctxWRoom ip [ host= "192.168.1.108" port= 8020 ]  
+
+ExternalQActor plasticbox context ctxWRoom
+
+QActor detector context ctxRobot { 
+	[" val NDB = 10
+	   var SpaceAvailable = NDB
+	   var RoomMap = null "]
+	   
+	State start initial {  
+		println("detector start")
+	}
+	Goto discoveryHome
+	
+	State discoveryHome {
+		println("waiting for a command...")
+	}
+	Transition commandReceived
+ 			whenMsg explore -> exploring
+ 			whenMsg suspend -> goingHome
+ 			whenMsg terminate -> terminating
+	
+	State exploring {
+		//execute the task: Explore the room.
+	}
+	
+	State emptingBox {
+		//execute the task: Empty the detectorBox.
+	}
+	
+	State goingHome {
+		//execute the task: Go to home.
+	}
+	
+	State terminating {
+		//execute the task: Terminate the work.
+	}
+}
