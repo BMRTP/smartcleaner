@@ -13,7 +13,7 @@ QActor detector context ctxRobot {
 	   var RoomMap = null "]
 	   
 	State start initial {  
-		println("detector start")
+		println("detector starts")
 	}
 	Goto discoveryHome
 	

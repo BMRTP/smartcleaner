@@ -2,4 +2,5 @@
 !.gitignore
 !*.qak
 !**/
+!*/resources/**
 /.metadata/

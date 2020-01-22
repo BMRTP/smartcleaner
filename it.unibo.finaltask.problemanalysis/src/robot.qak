@@ -1,0 +1,64 @@
+System smartcleaner
+
+Dispatch cmd      : cmd(X)
+Event  obstacle   : obstacle(DISTANCE)
+Request  getDistance  :  getDistance(X)
+Reply    distance  	:  	distance(DISTANCE)
+
+Context ctxRobot ip [ host= "localhost" port= 8018 ]  
+   
+CodedQActor robotadapter context ctxRobot className "itunibo.robot.robotAdapterQa"
+		
+QActor basicrobot context ctxRobot { 
+
+	State s0 initial {
+		println("basicrobot starts")
+	}
+	Goto work    
+	
+	State work{ println("basicrobot waiting for a command... ")}
+	Transition t0 
+			whenMsg cmd          -> handleCmd
+			whenEvent obstacle   -> handleObstacle
+   
+	State handleCmd {    
+ 		println("basicrobot handle ${payloadArg(0)}")
+		onMsg( cmd : cmd(X) ){
+ 			forward robotadapter -m cmd : cmd($payloadArg(0))
+		}
+	}
+	Goto work
+	
+	State handleObstacle{
+		forward robotadapter -m cmd : cmd(h)
+		println("basicrobot stops (for safety) since obstacle")
+ 	}
+	Goto work
+}  
+ 
+
+CodedQActor sonaradapter context ctxRobot className "itunibo.sonar.sonarAdapter"
+
+QActor sonar context ctxRobot {
+	
+	State s0 initial {
+		println("sonar starts")
+	}
+	Goto waitResponse
+	
+	State waitResponse {
+		request sonaradapter -m getDistance : getDistance(0)
+	}
+	Transition t0
+ 		whenReply distance -> handleResponse
+ 		
+ 	State handleResponse {
+ 		onMsg(distance:distance(X)) {
+ 			if "(payloadArg(0).toDouble() <= 10)" {
+ 				emit obstacle : obstacle($payloadArg(0))
+ 			}
+ 			delay 250
+ 		}
+ 	}
+ 	Goto waitResponse
+}
