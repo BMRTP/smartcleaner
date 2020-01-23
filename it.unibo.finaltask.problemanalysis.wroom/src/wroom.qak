@@ -1,0 +1,75 @@
+System smartcleaner
+
+Dispatch suspend : suspend(X)
+
+Event tvocvalue : tvocvalue(VALUE)
+Request gettvoc : gettvoc(X)
+Reply tvoc : tvoc(VALUE)
+
+Context ctxWRoom ip [ host= "localhost" port= 8020 ]
+//Context ctxDetector ip [ host= "127.0.0.1" port= 8022 ]
+
+//ExternalQActor detector context ctxDetector
+
+QActor roomagent context ctxWRoom { 
+	[" val TVOCHighThreshold = 200.0
+	   var value = 0.0
+	"]
+	
+	State s0 initial {  
+		println("roomagent starts")
+	}
+	Goto notalerted
+	
+	State notalerted {}
+	Transition t1
+		whenEvent tvocvalue -> checkalerting
+		
+	State checkalerting {
+		onMsg( tvocvalue : tvocvalue(VALUE) ){
+			["value = payloadArg(0).toDouble()"]
+		}
+	}
+	Goto alerting if "(value > TVOCHighThreshold)" else notalerted
+	
+	State alerting {
+		println("roomagent alerted, suspending detector")
+		//forward detector -m suspend: suspend(true)
+	}
+	Goto alerted
+	
+	State alerted {} 
+	Transition t2
+		whenEvent tvocvalue -> checknotalerting
+	
+	State checknotalerting {
+		onMsg( tvocvalue : tvocvalue(VALUE) ){
+			["value = payloadArg(0).toDouble()"]
+		}
+	}
+	Goto notalerted if "(value <= TVOCHighThreshold)" else alerted
+}
+
+CodedQActor tvocadapter context ctxWRoom className "itunibo.tvoc.tvocAdapterQa"
+
+QActor tvoc context ctxWRoom {
+	
+	State s0 initial {  
+		println("tvoc starts")
+	}
+	Goto work
+	
+	State work {
+		request tvocadapter -m gettvoc : gettvoc(value)
+	}
+	Transition t1 
+		whenReply tvoc -> handlevalue
+		
+	State handlevalue {
+		onMsg(tvoc : tvoc(VALUE)){
+			emit tvocvalue : tvocvalue($payloadArg(0))
+		}
+		delay 1000
+	}
+	Goto work
+}
