@@ -16,11 +16,12 @@ import alice.tuprolog.*
         private val sep      = ";"
         private var outToServer: PrintWriter?     = null
         private var inFromServer: BufferedReader? = null
-		
-		private var odd = true
+		private var lastObstacle: String = "";
+		private var actor: ActorBasic? = null;
 		
         fun initClientConn(actor:ActorBasic, hostName: String = "localhost", portStr: String = "8999"  ) {
             port  = Integer.parseInt(portStr)
+			this.actor = actor;
             try {
                 val clientSocket = Socket(hostName, port)
                 println("		--- clientWenvObjTcp |  CONNECTION DONE")
@@ -36,21 +37,36 @@ import alice.tuprolog.*
 			var outS = "{'type': 'alarm', 'arg': 0 }"
 			when( v ){
 				"w"  -> outS = "{'type': 'moveForward',  'arg': -1  }"
-    			"s"  -> outS = "{'type': 'moveBackward', 'arg': -1  }"
 				"a"  -> outS = "{'type': 'turnLeft',     'arg': -1  }"
  				"d"  -> outS = "{'type': 'turnRight',    'arg': -1  }"
-				"l"  -> outS = "{'type': 'turnLeft',     'arg': 400 }"
- 				"r"  -> outS = "{'type': 'turnRight',    'arg': 400 }"
-				"x"  -> outS = "{'type': 'turnLeft',     'arg': 400 }"
- 				"z"  -> outS = "{'type': 'turnRight',    'arg': 400 }"
    			    "h"  -> outS = "{'type': 'alarm',        'arg': 0   }"
- 				else -> outS = "{'type': 'remove',       'arg': \"$v\"  }"  //TODO: define the remove method
+ 				"grab" -> outS = "{'type': 'remove',       'arg': \"$lastObstacle\"  }"
  			}
 			val jsonObject = JSONObject(outS) 
 			val msg= "$sep${jsonObject.toString()}$sep"
 			outToServer?.println(msg)
             outToServer?.flush()
          }
+		
+		fun sendReq(req: ApplMessage) {
+			var outS: String = ""
+			var reply: String = ""
+			when(req.msgId()){
+ 				"grab" -> {outS = "{'type': 'remove', 'arg': \"$lastObstacle\" }"; reply = "grabbed"}
+ 			}
+			
+			if(lastObstacle.contains("bottle", ignoreCase = true)) {
+				val jsonObject = JSONObject(outS) 
+				val msg= "$sep${jsonObject.toString()}$sep"
+			    outToServer?.println(msg)
+                outToServer?.flush()
+				lastObstacle = ""
+				MsgUtil.buildReplyReq(actor!!.name, reply, "$reply(true)",  req.msgSender())
+			} else {
+				MsgUtil.buildReplyReq(actor!!.name, reply, "$reply(false)",  req.msgSender())
+			}
+			
+		}
 
         private fun startTheReader( actor:ActorBasic  ) {
             GlobalScope.launch {
@@ -59,40 +75,17 @@ import alice.tuprolog.*
                         val inpuStr = inFromServer?.readLine()
                         val jsonMsgStr =
                             inpuStr!!.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-                        //println("		--- clientWenvObjTcp | inpuStr= $jsonMsgStr")
                         val jsonObject = JSONObject(jsonMsgStr)
-                        //println( "type: " + jsonObject.getString("type"));
                         when (jsonObject.getString("type")) {
-                            //"webpage-ready" -> println("webpage-ready ")
-                            "sonar-activated" -> {
-                                //println("		--- sonar-activated ")
-                                val jsonArg   = jsonObject.getJSONObject("arg")
-                                val sonarName = jsonArg.getString("sonarName")
-                                val distance  = jsonArg.getInt("distance")
-                                //emitLocalStreamEvent( m )
- 								val m1 = "sonar($sonarName, $distance)"
-								//println( "		--- clientWenvObjTcp EMIT $m1"   );
-							    actor.emit("sonar",m1 );
-                            }
                             "collision" -> {
                                 val jsonArg = jsonObject.getJSONObject("arg")
                                 val objectName = jsonArg.getString("objectName")
-                                //println("		--- clientWenvObjTcp | collision objectName=$objectName")
-//                                val m = MsgUtil.buildEvent( "tcp", "obstacle","obstacle($objectName)")
-//								//println("clientWenvObjTcp | emit $m")
-//                                //emitLocalStreamEvent( m )
-//								actor.emit(m)
-								//ADDED DEC2019 - First this and next normal obstaces
+								actor.emit("sonar", "sonar(1)" );
+								lastObstacle = objectName;
+								//Aggiungere in fase di progetto un attore che si occupa di capire se l'ostacolo è una bottiglia di plastica?
  								val vobstev= MsgUtil.buildEvent( "sonarsupport","virtualobstacle","virtualobstacle($objectName)")
  								println("clientWenvObjTcp | emit $vobstev")
 								actor.emit( vobstev )
-
-								var m1 = "sonar( 6 )"		//EMIT events with delta = 2
-								if( odd ){ m1 = "sonar( 3 )" }								
-								val event = MsgUtil.buildEvent( "sonarsupport","sonarRobot",m1)
-								odd = !odd							
-								//(streaming)
-								actor.emitLocalStreamEvent( event )
 						    }
                         }
                     } catch (e: IOException) {

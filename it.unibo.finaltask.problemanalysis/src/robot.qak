@@ -1,9 +1,19 @@
 System smartcleaner
 
 Dispatch cmd      : cmd(X)
-Event  obstacle   : obstacle(DISTANCE)
-Request  getDistance  :  getDistance(X)
-Reply    distance  	:  	distance(DISTANCE)
+
+Event    sonar    : sonar(DISTANCE)
+Event    obstacle : obstacle(DISTANCE)
+
+Request  grab     : grab(X)
+Reply    grabbed  : grabbed(X) //true, false
+
+Request  step     : step(DURATION)
+Reply    stepdone :  stepdone(X)  
+Reply    stepfail :  stepfail(DURATION)  
+
+Request getobstacletype : getobstacletype(X)
+Reply   obstacletype : obstacletype(X)
 
 Context ctxRobot ip [ host= "localhost" port= 8018 ]  
    
@@ -34,31 +44,127 @@ QActor basicrobot context ctxRobot {
 		println("basicrobot stops (for safety) since obstacle")
  	}
 	Goto work
-}  
- 
+}
 
-CodedQActor sonaradapter context ctxRobot className "itunibo.sonar.sonarAdapter"
+QActor obstacleclassifier context ctxRobot {
+	State s0 initial {
+		println("obstacleclassifier starts")
+	}
+	Goto work
+	
+	State work { println("obstacleclassifier waiting for a request... ") }
+	Transition t0 
+		whenRequest getobstacletype   -> handleGetObstacleType
+		
+	State handleGetObstacleType {
+		onMsg(getobstacletype : getobstacletype(X)) {
+	 		
+		}
+	}
+}
 
 QActor sonar context ctxRobot {
-	
 	State s0 initial {
 		println("sonar starts")
 	}
-	Goto waitResponse
+	Goto work
 	
-	State waitResponse {
-		request sonaradapter -m getDistance : getDistance(0)
+	State work { println("sonar waiting for a distance... ") }
+	Transition t0 
+		whenEvent sonar   -> checkdistance
+	
+	State checkdistance {
+		onMsg(sonar : sonar(X)) {
+	 			if "(payloadArg(0).toDouble() <= 10)" {
+	 				println("sonar finds an obstacle... ")
+	 				emit obstacle : obstacle($payloadArg(0))
+	 			}
+		}
+		delay 250
 	}
+	Goto work
+}
+
+QActor grabber context ctxRobot {
+	State s0 initial {
+		println("grabber starts")
+	}
+	Goto work
+	State work { println("grabber waiting for a grab command... ") }
 	Transition t0
- 		whenReply distance -> handleResponse
- 		
- 	State handleResponse {
- 		onMsg(distance:distance(X)) {
- 			if "(payloadArg(0).toDouble() <= 10)" {
- 				emit obstacle : obstacle($payloadArg(0))
- 			}
- 			delay 250
- 		}
- 	}
- 	Goto waitResponse
+		whenRequest grab -> handlegrab
+		
+	State handlegrab {
+		onMsg(grab : grab(X)) {
+			request robotadapter -m grab : grab(it)
+		}
+	} Transition t1
+		whenReply grabbed -> handleresponse
+		
+	State handleresponse {
+		onMsg(grabbed : grabbed(X)) {
+			if "(payloadArg(0) == \"true\")" {
+				println("grabber grabs a bottle... ")
+				replyTo grab with grabbed : grabbed(true)
+			} else {
+				println("grabber can't grabs the bottle... ")
+				replyTo grab with grabbed : grabbed(false)
+			}
+		}
+	}
+	Goto work
+}
+
+QActor smartrobot context ctxRobot {
+[" 
+   var StepTime      = 0L
+   var Duration      = 0 
+"]  	
+	State s0 initial{
+ 		println("smartrobot starts")
+	}
+	Goto work 
+	
+	State work{ println("smartrobot waiting for a command...") } 
+	Transition s0 
+ 			whenMsg cmd      -> handleCmd
+ 			whenRequest step -> doStep
+ 			whenRequest getobstacletype -> handleGetObstacle
+ 			
+	State handleCmd {
+		onMsg(cmd : cmd(X)){ 
+			forward basicrobot -m cmd : cmd($payloadArg(0))
+		}
+	} 
+	Goto work 
+	
+	State handleGetObstacle {
+		onMsg(getobstacletype : getobstacletype(X)){ 
+			forward basicrobot -m cmd : cmd($payloadArg(0))
+		}
+	}
+	
+	State doStep{ 
+		onMsg(step : step(T)){
+			["StepTime = payloadArg(0).toLong() 
+ 			  startTimer()"]
+ 			println("smartrobot is doing a $StepTime ms step")
+			forward basicrobot -m cmd : cmd(w)
+		}  
+	}  
+	Transition t0 
+		whenTimeVar StepTime  -> stepDone	
+		whenEvent obstacle    -> stepFail
+ 	
+	State stepDone {
+		forward basicrobot -m cmd : cmd(h) 
+ 		replyTo step with stepdone : stepdone(ok)
+  	}
+	Goto work 
+
+	State stepFail{
+		["Duration=getDuration()"]  
+		replyTo step with stepfail : stepfail($Duration)
+   	}
+	Goto work
 }
