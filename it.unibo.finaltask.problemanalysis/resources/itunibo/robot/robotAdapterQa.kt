@@ -13,7 +13,6 @@ class robotAdapterQa(name: String) : ActorBasic(name) {
 	}
 
 	override suspend fun actorBody(msg: ApplMessage) {
-		println("	--- robotAdapterQa | received  msg= $msg ")
 		if(msg.isDispatch()) {
 			val move = (Term.createTerm(msg.msgContent()) as Struct).getArg(0).toString()
 		    clientWenvObjTcp.sendMsg(move)

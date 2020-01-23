@@ -16,7 +16,7 @@ import alice.tuprolog.*
         private val sep      = ";"
         private var outToServer: PrintWriter?     = null
         private var inFromServer: BufferedReader? = null
-		private var lastObstacle: String = "";
+		private var lastObstacle: String = "nothing";
 		private var actor: ActorBasic? = null;
 		
         fun initClientConn(actor:ActorBasic, hostName: String = "localhost", portStr: String = "8999"  ) {
@@ -37,8 +37,8 @@ import alice.tuprolog.*
 			var outS = "{'type': 'alarm', 'arg': 0 }"
 			when( v ){
 				"w"  -> outS = "{'type': 'moveForward',  'arg': -1  }"
-				"a"  -> outS = "{'type': 'turnLeft',     'arg': -1  }"
- 				"d"  -> outS = "{'type': 'turnRight',    'arg': -1  }"
+				"a"  -> outS = "{'type': 'turnLeft',     'arg': 400  }"
+ 				"d"  -> outS = "{'type': 'turnRight',    'arg': 400  }"
    			    "h"  -> outS = "{'type': 'alarm',        'arg': 0   }"
  				"grab" -> outS = "{'type': 'remove',       'arg': \"$lastObstacle\"  }"
  			}
@@ -49,23 +49,31 @@ import alice.tuprolog.*
          }
 		
 		fun sendReq(req: ApplMessage) {
-			var outS: String = ""
 			var reply: String = ""
+			var m: ApplMessage? = null
 			when(req.msgId()){
- 				"grab" -> {outS = "{'type': 'remove', 'arg': \"$lastObstacle\" }"; reply = "grabbed"}
+ 				"grab" -> {
+					val outS = "{'type': 'remove', 'arg': \"$lastObstacle\" }"
+					
+					reply = "grabbed"
+					if(lastObstacle.contains("bottle", ignoreCase = true)) {
+						val jsonObject = JSONObject(outS) 
+						val msg= "$sep${jsonObject.toString()}$sep"
+						outToServer?.println(msg)
+						outToServer?.flush()
+						lastObstacle = ""
+						m = MsgUtil.buildReply(actor!!.name, reply, "$reply(true)",  req.msgSender())
+					} else {
+						m = MsgUtil.buildReply(actor!!.name, reply, "$reply(false)",  req.msgSender())
+					}
+				}
+				"getobstacletype" -> {
+					println("		--- clientWenvObjTcp | receives getobstacletype")
+					reply = "obstacletype"
+					m = MsgUtil.buildReply(actor!!.name, reply, "$reply($lastObstacle)",  req.msgSender())
+				}
  			}
-			
-			if(lastObstacle.contains("bottle", ignoreCase = true)) {
-				val jsonObject = JSONObject(outS) 
-				val msg= "$sep${jsonObject.toString()}$sep"
-			    outToServer?.println(msg)
-                outToServer?.flush()
-				lastObstacle = ""
-				MsgUtil.buildReplyReq(actor!!.name, reply, "$reply(true)",  req.msgSender())
-			} else {
-				MsgUtil.buildReplyReq(actor!!.name, reply, "$reply(false)",  req.msgSender())
-			}
-			
+			actor!!.scope.launch { actor!!.sendMessageToActor( m!!, req.msgSender(), req.conn ) }
 		}
 
         private fun startTheReader( actor:ActorBasic  ) {
@@ -81,11 +89,8 @@ import alice.tuprolog.*
                                 val jsonArg = jsonObject.getJSONObject("arg")
                                 val objectName = jsonArg.getString("objectName")
 								actor.emit("sonar", "sonar(1)" );
+								println("	--- robotAdapterQa | emits  msg= sonar(1) ")
 								lastObstacle = objectName;
-								//Aggiungere in fase di progetto un attore che si occupa di capire se l'ostacolo è una bottiglia di plastica?
- 								val vobstev= MsgUtil.buildEvent( "sonarsupport","virtualobstacle","virtualobstacle($objectName)")
- 								println("clientWenvObjTcp | emit $vobstev")
-								actor.emit( vobstev )
 						    }
                         }
                     } catch (e: IOException) {

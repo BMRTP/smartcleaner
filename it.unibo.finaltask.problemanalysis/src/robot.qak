@@ -9,11 +9,11 @@ Request  grab     : grab(X)
 Reply    grabbed  : grabbed(X) //true, false
 
 Request  step     : step(DURATION)
-Reply    stepdone :  stepdone(X)  
-Reply    stepfail :  stepfail(DURATION)  
+Reply    stepdone : stepdone(X)
+Reply    stepfail : stepfail(DURATION)  
 
 Request getobstacletype : getobstacletype(X)
-Reply   obstacletype : obstacletype(X)
+Reply   obstacletype    : obstacletype(X)
 
 Context ctxRobot ip [ host= "localhost" port= 8018 ]  
    
@@ -32,8 +32,8 @@ QActor basicrobot context ctxRobot {
 			whenEvent obstacle   -> handleObstacle
    
 	State handleCmd {    
- 		println("basicrobot handle ${payloadArg(0)}")
 		onMsg( cmd : cmd(X) ){
+			println("basicrobot handle ${payloadArg(0)}")
  			forward robotadapter -m cmd : cmd($payloadArg(0))
 		}
 	}
@@ -54,13 +54,24 @@ QActor obstacleclassifier context ctxRobot {
 	
 	State work { println("obstacleclassifier waiting for a request... ") }
 	Transition t0 
-		whenRequest getobstacletype   -> handleGetObstacleType
+		whenRequest getobstacletype -> handleGetObstacleType
 		
 	State handleGetObstacleType {
+		println("obstacleclassifier received a request")
 		onMsg(getobstacletype : getobstacletype(X)) {
-	 		
+	 		request robotadapter -m getobstacletype : getobstacletype($payloadArg(0))
 		}
 	}
+	Transition t1
+		whenReply  obstacletype -> handleObstacleType
+		
+	State handleObstacleType {
+		onMsg(obstacletype : obstacletype(X)) {
+			println("obstacleclassifier perceived ${payloadArg(0)}")
+			replyTo getobstacletype with obstacletype : obstacletype($payloadArg(0))
+		}
+	}
+	Goto work
 }
 
 QActor sonar context ctxRobot {
@@ -80,7 +91,7 @@ QActor sonar context ctxRobot {
 	 				emit obstacle : obstacle($payloadArg(0))
 	 			}
 		}
-		delay 250
+		delay 100
 	}
 	Goto work
 }
@@ -107,7 +118,7 @@ QActor grabber context ctxRobot {
 				println("grabber grabs a bottle... ")
 				replyTo grab with grabbed : grabbed(true)
 			} else {
-				println("grabber can't grabs the bottle... ")
+				println("grabber can't grab the object... ")
 				replyTo grab with grabbed : grabbed(false)
 			}
 		}
@@ -129,7 +140,6 @@ QActor smartrobot context ctxRobot {
 	Transition s0 
  			whenMsg cmd      -> handleCmd
  			whenRequest step -> doStep
- 			whenRequest getobstacletype -> handleGetObstacle
  			
 	State handleCmd {
 		onMsg(cmd : cmd(X)){ 
@@ -138,13 +148,7 @@ QActor smartrobot context ctxRobot {
 	} 
 	Goto work 
 	
-	State handleGetObstacle {
-		onMsg(getobstacletype : getobstacletype(X)){ 
-			forward basicrobot -m cmd : cmd($payloadArg(0))
-		}
-	}
-	
-	State doStep{ 
+	State doStep { 
 		onMsg(step : step(T)){
 			["StepTime = payloadArg(0).toLong() 
  			  startTimer()"]
@@ -163,7 +167,7 @@ QActor smartrobot context ctxRobot {
 	Goto work 
 
 	State stepFail{
-		["Duration=getDuration()"]  
+		["Duration=getDuration()"]
 		replyTo step with stepfail : stepfail($Duration)
    	}
 	Goto work
