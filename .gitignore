@@ -3,4 +3,6 @@
 !*.qak
 !**/
 !*/resources/**
+!it.unibo.finaltask.coapserver/build.gradle
+!it.unibo.finaltask.coapserver/src/*.kt
 /.metadata/

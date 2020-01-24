@@ -1,0 +1,70 @@
+/*
+================================================================================
+build_ctxPlasticBox.gradle
+GENERATED ONLY ONCE
+USAGE:	 
+	gradle build eclipse		//to set the dependency on the library
+	gradle   -b build_ctxPlasticBox.gradle distZip //for executable jar and distribution
+	
+	gradle   -b build_ctxPlasticBox.gradle qawrapper
+	gradlew  -b build_ctxPlasticBox.gradle eclipse		//to set the dependency on the library
+	gradlew  -b build_ctxPlasticBox.gradle build
+	gradlew  -b build_ctxPlasticBox.gradle -q tasks --all
+	gradlew  -b build_ctxPlasticBox.gradle cleanDistDir	//to clean the src directory
+================================================================================
+*/
+plugins {
+    id 'java'
+    id 'eclipse'
+    //id 'application'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.21'
+}
+
+version '1.0'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+//COROUTINE
+    compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core-common', version: '1.1.0'
+    compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.1.0'
+//JSON
+    // https://mvnrepository.com/artifact/org.json/json
+    compile group: 'org.json', name: 'json', version: '20160810'
+//COAP
+	// https://mvnrepository.com/artifact/org.eclipse.californium/californium-core
+	compile group: 'org.eclipse.californium', name: 'californium-core', version: '2.0.0-M12'
+	// https://mvnrepository.com/artifact/org.eclipse.californium/californium-proxy
+	compile group: 'org.eclipse.californium', name: 'californium-proxy', version: '2.0.0-M12'
+//LOG4j	
+	compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+sourceSets {
+    main.java.srcDirs += 'src'
+    main.java.srcDirs += 'resources'
+}
+/*
+mainClassName = 'it.unibo.TODOKt'
+
+jar {
+    println("executing jar")
+    from sourceSets.main.allSource
+    manifest {
+        attributes 'Main-Class': "$mainClassName"
+    }
+}
+*/
