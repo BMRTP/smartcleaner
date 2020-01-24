@@ -46,7 +46,7 @@ QActor roomagent context ctxWRoom {
 	[" val TVOCHighThreshold = 200 "]
 	
 	State start initial {  
-		println("roomagent start")
+		println("roomagent starts")
 	}
 	Goto notallerted
 	
@@ -67,7 +67,7 @@ QActor plasticbox context ctxWRoom {
 	   var SpaceAvailable = NPB "]
 	   
 	State start initial {  
-		println("plasticbox start")
+		println("plasticbox starts")
 	}
 	Goto ready
 	

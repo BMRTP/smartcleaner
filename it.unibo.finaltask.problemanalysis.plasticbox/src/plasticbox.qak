@@ -1,0 +1,48 @@
+System smartcleaner
+
+Dispatch empty : empty(X)
+Request throwaway : throwaway(QUANTITY)
+Reply   throwed : throwed(QUANTITY)
+
+Context ctxPlasticBox ip [ host= "localhost" port= 8016 ]
+
+QActor plasticbox context ctxPlasticBox {
+	[" val NPB = 10
+	   var SpaceAvailable = NPB 
+	   val resource = itunibo.resource.CoapResourceSupport(name, \"coap://localhost:5683\")
+	   resource.createProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+	"]
+	
+	State s0 initial {
+		println("plasticbox starts")
+	}
+	Goto ready 
+	
+	State ready { }
+	Transition t1
+		whenMsg empty -> reset
+		whenRequest throwaway -> set
+	
+	State reset {
+		println("plasticbox is now empty")
+		[" SpaceAvailable = NPB 
+		   resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+		 "]
+	}
+	Goto ready
+	
+	State set {
+		onMsg(throwaway : throwaway(QUANTITY)){
+			println("plasticbox receives ${payloadArg(0)} bottles")
+			if "(SpaceAvailable >= payloadArg(0).toInt())" {
+				[" SpaceAvailable -= payloadArg(0).toInt() 
+				   resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+				"]
+				replyTo throwaway with throwed : throwed($payloadArg(0))
+			} else {
+				replyTo throwaway with throwed : throwed(0)
+			}
+		}
+	}
+	Goto ready
+}

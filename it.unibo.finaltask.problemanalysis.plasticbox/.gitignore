@@ -1,0 +1,24 @@
+bin
+bin/default
+.metadata
+build
+
+#node
+nodeCode/frontend/node_modules/
+*.lck
+package-lock.json
+
+# MQTT generated
+*-tcp*
+
+ # Ignore Gradle project-specific cache directory
+.gradle
+gradlew
+gradlew.bat
+gradle
+
+/ReadMe.html
+.lck/ 
+docker/
+/.metadata/
+/src-gen/
