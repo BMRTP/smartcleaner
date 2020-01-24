@@ -1,0 +1,140 @@
+System smartcleaner
+
+Dispatch explore   : explore(X)
+Dispatch suspend   : suspend(X)
+Dispatch terminate : terminate(X)
+
+Request  step     : step(DURATION)
+Reply    stepdone : stepdone(X)
+Reply    stepfail : stepfail(DURATION)
+
+Request getobstacletype : getobstacletype(X)
+Reply   obstacletype    : obstacletype(X)
+
+Request  grab     : grab(X)
+Reply    grabbed  : grabbed(X) //true, false
+
+Context ctxDetector ip [ host= "localhost" port= 8022 ]  
+Context ctxRobot ip [ host= "127.0.0.1" port= 8018 ]  
+
+ExternalQActor smartrobot context ctxRobot
+ExternalQActor obstacleclassifier context ctxRobot
+ExternalQActor grabber context ctxRobot
+
+QActor detector context ctxDetector { 
+	[" val NDB = 10
+	   var SpaceAvailable = NDB
+	   var RoomMap = \"\" 
+	   val mapname     = \"roomMbot3\"
+
+	   var SidesNum = 0
+	   //VIRTUAL ROBOT
+       var StepTime = 330
+	   var BackStepTime = 0
+		"]
+	   
+	State start initial {  
+		println("detector starts")
+		//run itunibo.planner.plannerUtil.initAI()
+	}
+	Goto discoveryHome
+	
+	State discoveryHome {
+		println("waiting for a command...")
+	}
+	Transition commandReceived
+ 			whenMsg explore -> exploring
+ 			whenMsg suspend -> goingHome
+ 			whenMsg terminate -> terminating
+	
+	State exploring { } Goto boundary if "(RoomMap == \"\")" else exploring //TODO exploring
+	
+	State boundary {
+		 ["SidesNum++"]
+	}
+	Goto doStep if "(SidesNum<=4)" else boundaryFound
+	
+	State doStep {
+		request smartrobot -m step : step(StepTime)
+	}
+	Transition t0   whenReply stepdone -> stepDone   
+					whenReply stepfail -> stepFailed
+	
+	State stepDone {  
+ 		//run itunibo.planner.moveUtils.updateMapAfterAheadOk(myself)
+		delay 100
+ 	}
+	Goto doStep
+	
+	State stepFailed {  
+		
+		["
+			//RoomMap = itunibo.planner.plannerUtil.getMapOneLine()  
+		"]		
+ 		//update coap map resource
+		
+ 		onMsg(stepfail : stepfail(DURATION)) {
+ 			println("detector founds an obstacle after ${payloadArg(0)}")
+ 			["BackStepTime = payloadArg(0).toInt()"]
+ 			request obstacleclassifier -m getobstacletype : getobstacletype(type)
+ 		}
+  		
+ 		//run itunibo.planner.moveUtils.backToCompensate(myself, Tback, Tback)      
+ 		//run itunibo.planner.plannerUtil.wallFound()
+		//run itunibo.planner.moveUtils.rotateLeft90( myself )
+	}
+	Transition t1
+		whenReply obstacletype -> checkObstacleType
+    
+    State checkObstacleType {
+    	onMsg(obstacletype : obstacletype(X)) {
+ 			println("detector founds ${payloadArg(0)}")
+ 			if "(payloadArg(0).contains(\"bottle\", ignoreCase = true))" {
+ 				if "(SpaceAvailable > 0)" {
+ 					request grabber -m grab : grab(it)
+ 				} else {
+ 					//run itunibo.planner.plannerUtil.bottleobstacoleFound()
+ 					//["wasABottle = true"]
+ 					//smart robot back compensation
+ 					//empty the detector
+ 				}
+ 			} else {
+ 				//run itunibo.planner.plannerUtil.staticobstacoleFound()
+ 				//["wasABottle = true"]
+ 				//smart robot back compensation
+ 			}
+ 		}
+    }
+    Transition t2
+    	whenReply grabbed -> bottleGrabbed
+    	//when reply back compensation -> staticobstacole
+    	
+    State bottleGrabbed {
+    	onMsg(grabbed : grabbed(X)) {
+    		if "(payloadArg(0) == \"true\")" {
+ 				println("detector grabbed a bottle")
+ 			} else {
+ 				println("FATAL ERROR: detector can't grab the object")
+ 				["System.exit(0)"]
+ 			}
+    	}
+    }
+    Goto doStep
+	
+	State boundaryFound {
+		//run itunibo.planner.plannerUtil.saveMap(mapname)
+		println("detector finished the boundary")   
+  	}
+	
+	State emptingBox {
+		//execute the task: Empty the detectorBox.
+	}
+	
+	State goingHome {
+		//execute the task: Go to home.
+	}
+	
+	State terminating {
+		//execute the task: Terminate the work.
+	}
+}
