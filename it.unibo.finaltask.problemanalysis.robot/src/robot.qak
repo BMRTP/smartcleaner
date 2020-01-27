@@ -9,6 +9,7 @@ Request  grab     : grab(X)
 Reply    grabbed  : grabbed(X) //true, false
 
 Request  step     : step(DURATION)
+Request  backstep : backstep(DURATION)
 Reply    stepdone : stepdone(X)
 Reply    stepfail : stepfail(DURATION)  
 
@@ -91,7 +92,6 @@ QActor sonar context ctxRobot {
 	 				emit obstacle : obstacle($payloadArg(0))
 	 			}
 		}
-		delay 100
 	}
 	Goto work
 }
@@ -138,8 +138,9 @@ QActor smartrobot context ctxRobot {
 	
 	State work{ println("smartrobot waiting for a command...") } 
 	Transition s0 
- 			whenMsg cmd      -> handleCmd
- 			whenRequest step -> doStep
+ 			whenMsg cmd      	 -> handleCmd
+ 			whenRequest step 	 -> doStep
+ 			whenRequest backstep -> doBackStep
  			
 	State handleCmd {
 		onMsg(cmd : cmd(X)){ 
@@ -169,6 +170,29 @@ QActor smartrobot context ctxRobot {
 	State stepFail{
 		["Duration=getDuration()"]
 		replyTo step with stepfail : stepfail($Duration)
+   	}
+	Goto work
+	
+	State doBackStep {
+		onMsg(backstep : backstep(T)){
+ 			["StepTime = payloadArg(0).toLong() 
+ 			  startTimer()"]
+ 			println("smartrobot is doing a $StepTime ms backstep")
+			forward basicrobot -m cmd : cmd(s)
+		}  
+	}  
+	Transition t0 
+		whenTimeVar StepTime  -> backStepDone	
+	
+	State backStepDone {
+		forward basicrobot -m cmd : cmd(h) 
+ 		replyTo backstep with stepdone : stepdone(ok)
+  	}
+	Goto work
+	
+	State backStepFail {
+		["Duration=getDuration()"]
+		replyTo backstep with stepfail : stepfail($Duration)
    	}
 	Goto work
 }

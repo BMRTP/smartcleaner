@@ -4,7 +4,10 @@ Dispatch explore   : explore(X)
 Dispatch suspend   : suspend(X)
 Dispatch terminate : terminate(X)
 
+Dispatch cmd      : cmd(X)
+
 Request  step     : step(DURATION)
+Request  backstep : backstep(DURATION)
 Reply    stepdone : stepdone(X)
 Reply    stepfail : stepfail(DURATION)
 
@@ -22,20 +25,33 @@ ExternalQActor obstacleclassifier context ctxRobot
 ExternalQActor grabber context ctxRobot
 
 QActor detector context ctxDetector { 
-	[" val NDB = 10
+	[" 
+	   val resource = itunibo.resource.CoapResourceSupport(name, \"coap://localhost:5683\")
+	   val NDB = 10
 	   var SpaceAvailable = NDB
+	   resource.createProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+
 	   var RoomMap = \"\" 
+	   resource.createProperty(\"RoomMap\", RoomMap)
+
 	   val mapname     = \"roomMbot3\"
 
 	   var SidesNum = 0
+	   var wasABottle = false
 	   //VIRTUAL ROBOT
        var StepTime = 330
 	   var BackStepTime = 0
+	   var completedPerimeter = false
+	   var currentTask = \"\"
+
+	   var posX = 1
+       var posY = 1
+	   var nextMoves = listOf<String>().iterator()
 		"]
 	   
 	State start initial {  
 		println("detector starts")
-		//run itunibo.planner.plannerUtil.initAI()
+		run itunibo.planner.plannerUtil.initAI()
 	}
 	Goto discoveryHome
 	
@@ -47,41 +63,41 @@ QActor detector context ctxDetector {
  			whenMsg suspend -> goingHome
  			whenMsg terminate -> terminating
 	
-	State exploring { } Goto boundary if "(RoomMap == \"\")" else exploring //TODO exploring
+	State exploring { 
+		["currentTask = \"exploring\""]
+	} Goto doStep if "(!completedPerimeter)" else exploringWithPlan
 	
 	State boundary {
-		 ["SidesNum++"]
+		["posX = itunibo.planner.moveUtils.getPosX(myself)
+		  posY = itunibo.planner.moveUtils.getPosY(myself) "]
 	}
-	Goto doStep if "(SidesNum<=4)" else boundaryFound
+	Goto boundaryFound if "(posX == 1 && posY == 1 &&  !completedPerimeter && currentTask == \"exploring\" )" else doStep
 	
-	State doStep {
-		request smartrobot -m step : step(StepTime)
+	//Split do step and reuse in exploring
+	State doStep {			
+		forward smartrobot -m cmd : cmd(d)
+		run itunibo.planner.moveUtils.rotateRight90(myself)
+		delay 1000
+		request smartrobot -m step : step($StepTime)
 	}
 	Transition t0   whenReply stepdone -> stepDone   
 					whenReply stepfail -> stepFailed
 	
 	State stepDone {  
- 		//run itunibo.planner.moveUtils.updateMapAfterAheadOk(myself)
-		delay 100
+ 		run itunibo.planner.moveUtils.updateMapAfterAheadOk(myself)
+ 		run itunibo.planner.plannerUtil.showMap()		
+		[" RoomMap = itunibo.planner.plannerUtil.getMap()
+		   resource.setProperty(\"RoomMap\", RoomMap) "]		
+		delay 1000
  	}
-	Goto doStep
+	Goto boundary
 	
 	State stepFailed {  
-		
-		["
-			//RoomMap = itunibo.planner.plannerUtil.getMapOneLine()  
-		"]		
- 		//update coap map resource
-		
  		onMsg(stepfail : stepfail(DURATION)) {
  			println("detector founds an obstacle after ${payloadArg(0)}")
- 			["BackStepTime = payloadArg(0).toInt()"]
+ 			["BackStepTime = payloadArg(0).toInt() - 20"] //TODO tune compensation
  			request obstacleclassifier -m getobstacletype : getobstacletype(type)
  		}
-  		
- 		//run itunibo.planner.moveUtils.backToCompensate(myself, Tback, Tback)      
- 		//run itunibo.planner.plannerUtil.wallFound()
-		//run itunibo.planner.moveUtils.rotateLeft90( myself )
 	}
 	Transition t1
 		whenReply obstacletype -> checkObstacleType
@@ -90,40 +106,66 @@ QActor detector context ctxDetector {
     	onMsg(obstacletype : obstacletype(X)) {
  			println("detector founds ${payloadArg(0)}")
  			if "(payloadArg(0).contains(\"bottle\", ignoreCase = true))" {
+ 				["wasABottle = true"]
  				if "(SpaceAvailable > 0)" {
  					request grabber -m grab : grab(it)
  				} else {
- 					//run itunibo.planner.plannerUtil.bottleobstacoleFound()
- 					//["wasABottle = true"]
- 					//smart robot back compensation
- 					//empty the detector
+ 					//already dirty cell
+ 					request smartrobot -m backstep : backstep($BackStepTime)
  				}
  			} else {
- 				//run itunibo.planner.plannerUtil.staticobstacoleFound()
- 				//["wasABottle = true"]
- 				//smart robot back compensation
+ 				["wasABottle = false"]
+ 				run itunibo.planner.moveUtils.setObstacleOnCurrentDirection(myself)
+ 				request smartrobot -m backstep : backstep($BackStepTime)
  			}
+ 			[" RoomMap = itunibo.planner.plannerUtil.getMap()
+		   resource.setProperty(\"RoomMap\", RoomMap) "]		
  		}
     }
     Transition t2
     	whenReply grabbed -> bottleGrabbed
-    	//when reply back compensation -> staticobstacole
+    	whenReply stepdone -> backCompensationDone
+    	
+    State backCompensationDone {
+    } Goto emptingBox if "(wasABottle)" else rotating //TODO emptingBox
+    
+    //Split rotation, reuse doStep and rotate only if !completedPerimeter
+    State rotating {
+    	forward smartrobot -m cmd : cmd(a)
+    	run itunibo.planner.moveUtils.rotateLeft90(myself)
+    	delay 1000
+    	request smartrobot -m step : step($StepTime)
+    } 
+    Transition t4
+    	whenReply stepdone -> stepDone   
+		whenReply stepfail -> stepFailed
     	
     State bottleGrabbed {
     	onMsg(grabbed : grabbed(X)) {
     		if "(payloadArg(0) == \"true\")" {
  				println("detector grabbed a bottle")
+ 				[" SpaceAvailable -= 1
+		   		   resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString()) "]
  			} else {
  				println("FATAL ERROR: detector can't grab the object")
  				["System.exit(0)"]
  			}
+ 			request smartrobot -m backstep : backstep($BackStepTime)
     	}
     }
-    Goto doStep
+    Transition t3
+    	 whenReply stepdone -> boundary
 	
 	State boundaryFound {
-		//run itunibo.planner.plannerUtil.saveMap(mapname)
+		run itunibo.planner.plannerUtil.saveMap(mapname)
+		["completedPerimeter = true"]
 		println("detector finished the boundary")   
+  	} Goto exploringWithPlan
+  	
+  	State exploringWithPlan {
+  		["val (x,y) = itunibo.planner.plannerUtil.getNextDirtyCell()
+		  itunibo.planner.plannerUtil.setGoal(x.toString(), y.toString())
+		  nextMoves = itunibo.planner.plannerUtil.getPlanMoves() "] //w | a | d
   	}
 	
 	State emptingBox {

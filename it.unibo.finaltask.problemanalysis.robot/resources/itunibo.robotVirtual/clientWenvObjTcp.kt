@@ -37,6 +37,7 @@ import alice.tuprolog.*
 			var outS = "{'type': 'alarm', 'arg': 0 }"
 			when( v ){
 				"w"  -> outS = "{'type': 'moveForward',  'arg': -1  }"
+				"s"  -> outS = "{'type': 'moveBackward',  'arg': -1  }"
 				"a"  -> outS = "{'type': 'turnLeft',     'arg': 400  }"
  				"d"  -> outS = "{'type': 'turnRight',    'arg': 400  }"
    			    "h"  -> outS = "{'type': 'alarm',        'arg': 0   }"
