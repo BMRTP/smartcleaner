@@ -3,6 +3,7 @@ System smartcleaner
 Dispatch explore   : explore(X)
 Dispatch suspend   : suspend(X)
 Dispatch terminate : terminate(X)
+Dispatch continue  : continue(X)
 
 Dispatch cmd      : cmd(X)
 
@@ -17,12 +18,17 @@ Reply   obstacletype    : obstacletype(X)
 Request  grab     : grab(X)
 Reply    grabbed  : grabbed(X) //true, false
 
+Request throwaway : throwaway(QUANTITY)
+Reply   throwed : throwed(QUANTITY)
+
 Context ctxDetector ip [ host= "localhost" port= 8022 ]  
 Context ctxRobot ip [ host= "127.0.0.1" port= 8018 ]  
+Context ctxPlasticBox ip [ host= "localhost" port= 8016 ]
 
 ExternalQActor smartrobot context ctxRobot
 ExternalQActor obstacleclassifier context ctxRobot
 ExternalQActor grabber context ctxRobot
+ExternalQActor plasticbox context ctxPlasticBox
 
 QActor detector context ctxDetector { 
 	[" 
@@ -36,18 +42,18 @@ QActor detector context ctxDetector {
 
 	   val mapname     = \"roomMbot3\"
 
-	   var SidesNum = 0
 	   var wasABottle = false
 	   //VIRTUAL ROBOT
        var StepTime = 330
 	   var BackStepTime = 0
 	   var completedPerimeter = false
-	   var currentTask = \"\"
+	   var currentTask = \"\" //exploring, goinghome, emptingBox, emptingBoxTerminating
 
 	   var posX = 1
        var posY = 1
 	   var nextMoves = listOf<String>().iterator()
 	   var nextMove = \"\"
+	   var plasticBoxFull = false
 		"]
 	   
 	State start initial {  
@@ -120,6 +126,7 @@ QActor detector context ctxDetector {
  					request grabber -m grab : grab(it)
  				} else {
  					//already dirty cell
+ 					//save robot position and direction or only bottle position
  					request smartrobot -m backstep : backstep($BackStepTime)
  				}
  			} else {
@@ -138,7 +145,6 @@ QActor detector context ctxDetector {
     State backCompensationDone {
     } Goto emptingBox if "(wasABottle)" else doNextStep //TODO emptingBox
     
-    //Split rotation, reuse doStep and rotate only if !completedPerimeter
     State doNextStep {
     	if "(!completedPerimeter)" {
 	    	forward smartrobot -m cmd : cmd(a)
@@ -183,16 +189,19 @@ QActor detector context ctxDetector {
 			itunibo.planner.plannerUtil.setObstacle(x, y)
 			RoomMap = itunibo.planner.plannerUtil.getMap()
 		    resource.setProperty(\"RoomMap\", RoomMap)
-		  } "] //can throw exception
+		  } "]
   		} 
-  	} Goto terminating if "(itunibo.planner.plannerUtil.isRoomClean())" else takeNextMove
+  	} Goto terminating if "(itunibo.planner.plannerUtil.isRoomClean() && currentTask == \"exploring\")" else takeNextMove
   	
   	State takeNextMove {
   		["nextMove = \"\" "]
   		if "(nextMoves.hasNext())" {
   			["nextMove = nextMoves.next()"]
   		}
-  	} Goto exploringWithPlan if "(nextMove == \"\")" else checkW
+  	} Goto planDone if "(nextMove == \"\")" else checkW
+  	
+  	State planDone {
+  	} Goto exploringWithPlan if "(currentTask == \"exploring\")" else destinationReached
   	
   	State checkW {
   	} Goto doStep if "(nextMove == \"w\")" else checkD
@@ -216,15 +225,57 @@ QActor detector context ctxDetector {
   	} Goto exploringWithPlan
 	
 	State emptingBox {
-		//execute the task: Empty the detectorBox.
+		["currentTask = \"emptingBox\" "]
 	}
 	
 	State goingHome {
-		//execute the task: Go to home.
-	}
+		println("Detector going home")
+		["currentTask = \"goinghome\"
+		  nextMoves = itunibo.planner.plannerUtil.goHomeMoves()
+		"]
+	} Goto exploringWithPlan
 	
 	State terminating {
-		//execute the task: Terminate the work.
 		println("Detector terminated the work")
+		
+	} Goto goingHome if "(SpaceAvailable == NDB)" else goingPlasticBox
+	
+	State goingPlasticBox {
+		println("Detector going to plasticbox")
+		["currentTask = \"emptingBoxTerminate\"
+		  nextMoves = itunibo.planner.plannerUtil.goPlasticBoxMoves()
+		"]
+	} Goto exploringWithPlan
+	
+	State emptingDetector {
+		["val quantity = NDB - SpaceAvailable"]
+		request plasticbox -m throwaway : throwaway(quantity)
+	} Transition t4
+		whenReply throwed -> throwedBottles
+			
+	State throwedBottles {
+		onMsg(throwed : throwed(QUANTITY)) {
+			["plasticBoxFull = (payloadArg(0).toInt() == 0)"]
+			if "(plasticBoxFull)" {
+				//scrivi al supervisor
+			}
+		}
+	} Goto waitForSupervisorCommand if "(plasticBoxFull)" else chooseDestination
+	
+	State chooseDestination {
+	} Goto goingHome if "(currentTask == \"emptingBoxTerminate\" )" else goingLastPosition
+	
+	State goingLastPosition {
+		//torno alla bottiglia
+		["currentTask == \"exploring\" "]
+	} Goto exploringWithPlan
+	
+	State waitForSupervisorCommand {
+		println("waiting for a command from supervisor...")
 	}
+	Transition t5
+ 		whenMsg continue -> emptingDetector
+	
+	State destinationReached {
+	} Goto discoveryHome if "(currentTask == \"goinghome\" )" else emptingDetector
 }

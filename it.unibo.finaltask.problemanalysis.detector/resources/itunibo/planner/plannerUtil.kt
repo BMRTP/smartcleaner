@@ -402,6 +402,18 @@ object plannerUtil {
 	fun isRoomClean(): Boolean {
 		return RoomMap.getRoomMap().isClean()
 	}
+	
+	fun goHomeMoves(): Iterator<String> {
+		if(initialState!!.getX() != 1 && initialState!!.getY() != 1) {
+			setGoal(1, 1)
+			return getPlanMoves()
+		} else {
+			return listOf<String>().iterator()
+		}
+	}
+	fun goPlasticBoxMoves(): Iterator<String> {
+		return goHomeMoves()
+	}
 }
 fun main() {
 		/*plannerUtil.initAI()
