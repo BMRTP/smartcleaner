@@ -388,21 +388,39 @@ object plannerUtil {
 				}
 			}
 		}
-		return Pair(0,0) //TODO: fixit
+		return Pair(1,1) //TODO: fixit
 	}
 	
 	fun getPlanMoves(): Iterator<String> {
 		return doPlan()!!.map { it.toString() }.iterator()
 	}
+	
+	fun setObstacle(x: Int, y: Int) {
+		RoomMap.getRoomMap().put(x, y, Box(true, false, false))
+	}
+	
+	fun isRoomClean(): Boolean {
+		return RoomMap.getRoomMap().isClean()
+	}
 }
 fun main() {
-		plannerUtil.initAI()
+		/*plannerUtil.initAI()
 		plannerUtil.loadRoomMap("roomMbot3")
 	    val (x, y) = plannerUtil.getNextDirtyCell()
 		println("[$x, $y]")
 		itunibo.planner.plannerUtil.setGoal(x, y)
-		println(plannerUtil.getPlanMoves())
-	}
+		println(plannerUtil.getPlanMoves())*/
+		val map = RoomMap.mapFromString("""X, X, X, X, X, X, X, X, X
+										   X, r, 0, 0, 0, 0, 0, 0, X, 
+										   X, 0, 0, 0, 0, 0, 0, 0, X, 
+										   X, 0, 0, 0, 0, 0, 0, 0, X, 
+										   X, 0, 0, 0, 0, 0, 0, 0, X, 
+										   X, 0, 0, 0, 0, 0, 0, 0, X, 
+										   X, X, X, X, X, X, X, X, X,""")
+		println(map)
+		RoomMap.setRoomMap(map)
+		itunibo.planner.plannerUtil.saveMap("roomMbot3")
+}
 
 
 

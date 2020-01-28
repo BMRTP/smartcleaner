@@ -20,6 +20,34 @@ public class RoomMap implements Serializable{
 		singletonRoomMap = map;
  	}
 	
+	public static RoomMap mapFromString(String map) {
+		int x = 0, y = 0;
+		RoomMap room = new RoomMap();
+		for(int i = 0; i < map.length(); i++) {
+			if(map.charAt(i) == 'X') {
+				room.put(x, y, new Box(true, false, false));
+				x++;
+			}
+			if(map.charAt(i) == '1') {
+				room.put(x, y, new Box(false, false, false));
+				x++;
+			}
+			if(map.charAt(i) == '0') {
+				room.put(x, y, new Box(false, true, false));
+				x++;
+			}
+			if(map.charAt(i) == 'r') {
+				room.put(x, y, new Box(false, false, true));
+				x++;
+			}
+			if(map.charAt(i) == '\n') {
+				x = 0;
+				y++;
+			}
+		}
+		return room;
+	}
+	
 	private List<ArrayList<Box>> roomMap = new ArrayList<ArrayList<Box>>();
 	
 	private RoomMap() {

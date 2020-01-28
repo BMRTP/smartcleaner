@@ -66,12 +66,12 @@ QActor detector context ctxDetector {
 	
 	State exploring { 
 	  [ "currentTask = \"exploring\"
-		val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
+		/*val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
 		if (a > 0 && b > 0) {
 			completedPerimeter = true
 			RoomMap = itunibo.planner.plannerUtil.getMap()
 		    resource.setProperty(\"RoomMap\", RoomMap)
-		} "]
+		} */"]
 	} Goto exploringWithPlan if "(completedPerimeter)" else checkRight
 	
 	State boundary {
@@ -86,7 +86,7 @@ QActor detector context ctxDetector {
 		delay 1000
 	} Goto doStep
 	
-	State doStep {			
+	State doStep {
 		request smartrobot -m step : step($StepTime)
 	}
 	Transition t0   whenReply stepdone -> stepDone   
@@ -162,12 +162,11 @@ QActor detector context ctxDetector {
     	}
     }
     Transition t3
-    	 whenReply stepdone -> boundary
+    	 whenReply stepdone -> doStep
 	
 	State boundaryFound {
-		run itunibo.planner.plannerUtil.saveMap(mapname)
+		//run itunibo.planner.plannerUtil.saveMap(mapname)
 		["completedPerimeter = true"]
-		println("detector finished the boundary")   
   	} Goto exploringWithPlan
   	
   	State resetPlan {
@@ -175,27 +174,31 @@ QActor detector context ctxDetector {
   	} Goto exploringWithPlan
   	
   	State exploringWithPlan {
-  		if "(!nextMoves.hasNext())" {
+  		if "(!nextMoves.hasNext() && !itunibo.planner.plannerUtil.isRoomClean())" {
   		  ["val (x,y) = itunibo.planner.plannerUtil.getNextDirtyCell()
 		  println(\"goto [$x, $y]\")
 		  itunibo.planner.plannerUtil.setGoal(x.toString(), y.toString())
-		  nextMoves = itunibo.planner.plannerUtil.getPlanMoves() "] //can throw exception
+		  nextMoves = itunibo.planner.plannerUtil.getPlanMoves()
+		  if(!nextMoves.hasNext()) {
+			itunibo.planner.plannerUtil.setObstacle(x, y)
+			RoomMap = itunibo.planner.plannerUtil.getMap()
+		    resource.setProperty(\"RoomMap\", RoomMap)
+		  } "] //can throw exception
   		} 
-  	} Goto takeNextMove
+  	} Goto terminating if "(itunibo.planner.plannerUtil.isRoomClean())" else takeNextMove
   	
   	State takeNextMove {
   		["nextMove = \"\" "]
   		if "(nextMoves.hasNext())" {
   			["nextMove = nextMoves.next()"]
-  			println(nextMove)
   		}
-  	} Goto checkStep if "(nextMove != \"\" )" else exploringWithPlan
+  	} Goto exploringWithPlan if "(nextMove == \"\")" else checkW
   	
-  	State checkStep {
-  	} Goto doStep if "(nextMove == \"w\")" else checkRight
+  	State checkW {
+  	} Goto doStep if "(nextMove == \"w\")" else checkD
   	
-  	State checkRight {
-  	} Goto rotateRight if "(nextMove == \"d\")" else checkLeft
+  	State checkD {
+  	} Goto rotateRight if "(nextMove == \"d\")" else checkA
   	
   	State rotateRight {
   		forward smartrobot -m cmd : cmd(d)
@@ -203,7 +206,7 @@ QActor detector context ctxDetector {
 		delay 1000
   	} Goto exploringWithPlan
   	
-  	State checkLeft {
+  	State checkA {
   	} Goto rotateLeft if "(nextMove == \"a\")" else exploringWithPlan
   	
   	State rotateLeft {
@@ -222,5 +225,6 @@ QActor detector context ctxDetector {
 	
 	State terminating {
 		//execute the task: Terminate the work.
+		println("Detector terminated the work")
 	}
 }
