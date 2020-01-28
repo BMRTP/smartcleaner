@@ -47,6 +47,7 @@ QActor detector context ctxDetector {
 	   var posX = 1
        var posY = 1
 	   var nextMoves = listOf<String>().iterator()
+	   var nextMove = \"\"
 		"]
 	   
 	State start initial {  
@@ -64,20 +65,28 @@ QActor detector context ctxDetector {
  			whenMsg terminate -> terminating
 	
 	State exploring { 
-		["currentTask = \"exploring\""]
-	} Goto doStep if "(!completedPerimeter)" else exploringWithPlan
+	  [ "currentTask = \"exploring\"
+		val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
+		if (a > 0 && b > 0) {
+			completedPerimeter = true
+			RoomMap = itunibo.planner.plannerUtil.getMap()
+		    resource.setProperty(\"RoomMap\", RoomMap)
+		} "]
+	} Goto exploringWithPlan if "(completedPerimeter)" else checkRight
 	
 	State boundary {
 		["posX = itunibo.planner.moveUtils.getPosX(myself)
 		  posY = itunibo.planner.moveUtils.getPosY(myself) "]
 	}
-	Goto boundaryFound if "(posX == 1 && posY == 1 &&  !completedPerimeter && currentTask == \"exploring\" )" else doStep
-	
-	//Split do step and reuse in exploring
-	State doStep {			
+	Goto boundaryFound if "(completedPerimeter || (posX == 1 && posY == 1 && currentTask == \"exploring\") )" else checkRight
+	 
+	State checkRight {
 		forward smartrobot -m cmd : cmd(d)
 		run itunibo.planner.moveUtils.rotateRight90(myself)
 		delay 1000
+	} Goto doStep
+	
+	State doStep {			
 		request smartrobot -m step : step($StepTime)
 	}
 	Transition t0   whenReply stepdone -> stepDone   
@@ -127,18 +136,17 @@ QActor detector context ctxDetector {
     	whenReply stepdone -> backCompensationDone
     	
     State backCompensationDone {
-    } Goto emptingBox if "(wasABottle)" else rotating //TODO emptingBox
+    } Goto emptingBox if "(wasABottle)" else doNextStep //TODO emptingBox
     
     //Split rotation, reuse doStep and rotate only if !completedPerimeter
-    State rotating {
-    	forward smartrobot -m cmd : cmd(a)
-    	run itunibo.planner.moveUtils.rotateLeft90(myself)
-    	delay 1000
-    	request smartrobot -m step : step($StepTime)
+    State doNextStep {
+    	if "(!completedPerimeter)" {
+	    	forward smartrobot -m cmd : cmd(a)
+	    	run itunibo.planner.moveUtils.rotateLeft90(myself)
+	    	delay 1000
+    	}
     } 
-    Transition t4
-    	whenReply stepdone -> stepDone   
-		whenReply stepfail -> stepFailed
+    Goto doStep if "(!completedPerimeter)" else resetPlan
     	
     State bottleGrabbed {
     	onMsg(grabbed : grabbed(X)) {
@@ -162,11 +170,47 @@ QActor detector context ctxDetector {
 		println("detector finished the boundary")   
   	} Goto exploringWithPlan
   	
+  	State resetPlan {
+  		["nextMoves = listOf<String>().iterator()"]
+  	} Goto exploringWithPlan
+  	
   	State exploringWithPlan {
-  		["val (x,y) = itunibo.planner.plannerUtil.getNextDirtyCell()
+  		if "(!nextMoves.hasNext())" {
+  		  ["val (x,y) = itunibo.planner.plannerUtil.getNextDirtyCell()
+		  println(\"goto [$x, $y]\")
 		  itunibo.planner.plannerUtil.setGoal(x.toString(), y.toString())
-		  nextMoves = itunibo.planner.plannerUtil.getPlanMoves() "] //w | a | d
-  	}
+		  nextMoves = itunibo.planner.plannerUtil.getPlanMoves() "] //can throw exception
+  		} 
+  	} Goto takeNextMove
+  	
+  	State takeNextMove {
+  		["nextMove = \"\" "]
+  		if "(nextMoves.hasNext())" {
+  			["nextMove = nextMoves.next()"]
+  			println(nextMove)
+  		}
+  	} Goto checkStep if "(nextMove != \"\" )" else exploringWithPlan
+  	
+  	State checkStep {
+  	} Goto doStep if "(nextMove == \"w\")" else checkRight
+  	
+  	State checkRight {
+  	} Goto rotateRight if "(nextMove == \"d\")" else checkLeft
+  	
+  	State rotateRight {
+  		forward smartrobot -m cmd : cmd(d)
+		run itunibo.planner.moveUtils.rotateRight90(myself)
+		delay 1000
+  	} Goto exploringWithPlan
+  	
+  	State checkLeft {
+  	} Goto rotateLeft if "(nextMove == \"a\")" else exploringWithPlan
+  	
+  	State rotateLeft {
+  		forward smartrobot -m cmd : cmd(a)
+	    run itunibo.planner.moveUtils.rotateLeft90(myself)
+	    delay 1000
+  	} Goto exploringWithPlan
 	
 	State emptingBox {
 		//execute the task: Empty the detectorBox.

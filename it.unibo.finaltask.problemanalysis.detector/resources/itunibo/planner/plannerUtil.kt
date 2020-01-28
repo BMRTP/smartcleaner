@@ -129,11 +129,12 @@ object plannerUtil {
         if (actions == null || actions!!.isEmpty()) {
             println("plannerUtil doPlan NO MOVES !!!!!!!!!!!! $actions!!"   )
             if (!RoomMap.getRoomMap().isClean) RoomMap.getRoomMap().setObstacles()
-            //actions = ArrayList()
-            return null
+            return actions
+			//return null
         } else if (actions!![0].isNoOp) {
             println("plannerUtil doPlan NoOp")
-            return null
+            return actions
+            //return null
         }
 		
         //println("plannerUtil doPlan actions=$actions")
@@ -380,8 +381,8 @@ object plannerUtil {
 	fun getNextDirtyCell(): Pair<Int,Int> {
 		val lenght = RoomMap.getRoomMap().getDimX()
 		val height = RoomMap.getRoomMap().getDimY()
-		for(i in 1..lenght) {
-			for(j in 1..height) {
+		for(i in 1..lenght-1) {
+			for(j in 1..height-1) {
 				if(RoomMap.getRoomMap().isDirty(i, j)) {
 					return Pair(i,j)
 				}
@@ -394,5 +395,14 @@ object plannerUtil {
 		return doPlan()!!.map { it.toString() }.iterator()
 	}
 }
+fun main() {
+		plannerUtil.initAI()
+		plannerUtil.loadRoomMap("roomMbot3")
+	    val (x, y) = plannerUtil.getNextDirtyCell()
+		println("[$x, $y]")
+		itunibo.planner.plannerUtil.setGoal(x, y)
+		println(plannerUtil.getPlanMoves())
+	}
+
 
 
