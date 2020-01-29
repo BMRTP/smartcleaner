@@ -23,7 +23,7 @@ Reply   throwed : throwed(QUANTITY)
 
 Context ctxDetector ip [ host= "localhost" port= 8022 ]  
 Context ctxRobot ip [ host= "127.0.0.1" port= 8018 ]  
-Context ctxPlasticBox ip [ host= "localhost" port= 8016 ]
+Context ctxPlasticBox ip [ host= "127.0.0.1" port= 8016 ]
 
 ExternalQActor smartrobot context ctxRobot
 ExternalQActor obstacleclassifier context ctxRobot
@@ -33,13 +33,15 @@ ExternalQActor plasticbox context ctxPlasticBox
 QActor detector context ctxDetector { 
 	[" 
 	   val resource = itunibo.resource.CoapResourceSupport(name, \"coap://localhost:5683\")
-	   val NDB = 10
+	   val NDB = 1
 	   var SpaceAvailable = NDB
 	   resource.createProperty(\"SpaceAvailable\", SpaceAvailable.toString())
 
 	   var RoomMap = \"\" 
 	   resource.createProperty(\"RoomMap\", RoomMap)
 
+	   var waitingForSupervisor: String = \"false\"
+	   resource.createProperty(\"waitingForSupervisor\", waitingForSupervisor)
 	   val mapname     = \"roomMbot3\"
 
 	   var wasABottle = false
@@ -47,10 +49,11 @@ QActor detector context ctxDetector {
        var StepTime = 330
 	   var BackStepTime = 0
 	   var completedPerimeter = false
-	   var currentTask = \"\" //exploring, goinghome, emptingBox, emptingBoxTerminating
+	   var currentTask = \"\" //exploring, goinghome, emptingBox, emptingBoxTerminating, goingBottle
 
 	   var posX = 1
        var posY = 1
+	   var lastPosition = Pair(1,1)
 	   var nextMoves = listOf<String>().iterator()
 	   var nextMove = \"\"
 	   var plasticBoxFull = false
@@ -63,7 +66,14 @@ QActor detector context ctxDetector {
 	Goto discoveryHome
 	
 	State discoveryHome {
+		println("STATE: discoveryHome")
 		println("waiting for a command...")
+		[" /*val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
+		if (a > 0 && b > 0) {
+			completedPerimeter = true
+			RoomMap = itunibo.planner.plannerUtil.getMap()
+		    resource.setProperty(\"RoomMap\", RoomMap)
+		}*/ "]
 	}
 	Transition commandReceived
  			whenMsg explore -> exploring
@@ -71,43 +81,46 @@ QActor detector context ctxDetector {
  			whenMsg terminate -> terminating
 	
 	State exploring { 
-	  [ "currentTask = \"exploring\"
-		/*val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
-		if (a > 0 && b > 0) {
-			completedPerimeter = true
-			RoomMap = itunibo.planner.plannerUtil.getMap()
-		    resource.setProperty(\"RoomMap\", RoomMap)
-		} */"]
-	} Goto exploringWithPlan if "(completedPerimeter)" else checkRight
+		println("STATE: exploring")
+	  [ "currentTask = \"exploring\" "]
+	} Goto exploringWithPlan if "(completedPerimeter)" else continuePerimeter
 	
-	State boundary {
+	State updatePosition {
+		println("STATE: updatePosition")
 		["posX = itunibo.planner.moveUtils.getPosX(myself)
-		  posY = itunibo.planner.moveUtils.getPosY(myself) "]
+		  posY = itunibo.planner.moveUtils.getPosY(myself)
+		  if (posX == 1 && posY == 1 && currentTask == \"exploring\") {
+				completedPerimeter = true
+		  } "]
 	}
-	Goto boundaryFound if "(completedPerimeter || (posX == 1 && posY == 1 && currentTask == \"exploring\") )" else checkRight
+	Goto exploringWithPlan if "(completedPerimeter || currentTask != \"exploring\")" else continuePerimeter
 	 
-	State checkRight {
+	State continuePerimeter {
+		println("STATE: continuePerimeter")
 		forward smartrobot -m cmd : cmd(d)
 		run itunibo.planner.moveUtils.rotateRight90(myself)
 		delay 1000
 	} Goto doStep
 	
 	State doStep {
+		println("STATE: doStep")
 		request smartrobot -m step : step($StepTime)
 	}
 	Transition t0   whenReply stepdone -> stepDone   
 					whenReply stepfail -> stepFailed
 	
 	State stepDone {  
+		println("STATE: stepDone")
  		run itunibo.planner.moveUtils.updateMapAfterAheadOk(myself)
  		run itunibo.planner.plannerUtil.showMap()		
 		[" RoomMap = itunibo.planner.plannerUtil.getMap()
 		   resource.setProperty(\"RoomMap\", RoomMap) "]		
 		delay 1000
  	}
-	Goto boundary
+	Goto updatePosition
 	
 	State stepFailed {  
+		println("STATE: stepFailed")
  		onMsg(stepfail : stepfail(DURATION)) {
  			println("detector founds an obstacle after ${payloadArg(0)}")
  			["BackStepTime = payloadArg(0).toInt() - 20"] //TODO tune compensation
@@ -118,6 +131,7 @@ QActor detector context ctxDetector {
 		whenReply obstacletype -> checkObstacleType
     
     State checkObstacleType {
+    	println("STATE: checkObstacleType")
     	onMsg(obstacletype : obstacletype(X)) {
  			println("detector founds ${payloadArg(0)}")
  			if "(payloadArg(0).contains(\"bottle\", ignoreCase = true))" {
@@ -126,7 +140,7 @@ QActor detector context ctxDetector {
  					request grabber -m grab : grab(it)
  				} else {
  					//already dirty cell
- 					//save robot position and direction or only bottle position
+ 					["lastPosition = itunibo.planner.plannerUtil.getAHeadPosition() "]
  					request smartrobot -m backstep : backstep($BackStepTime)
  				}
  			} else {
@@ -143,9 +157,11 @@ QActor detector context ctxDetector {
     	whenReply stepdone -> backCompensationDone
     	
     State backCompensationDone {
-    } Goto emptingBox if "(wasABottle)" else doNextStep //TODO emptingBox
+    	println("STATE: backCompensationDone")
+    } Goto emptingBox if "(wasABottle)" else doNextStep
     
     State doNextStep {
+    	println("STATE: doNextStep")
     	if "(!completedPerimeter)" {
 	    	forward smartrobot -m cmd : cmd(a)
 	    	run itunibo.planner.moveUtils.rotateLeft90(myself)
@@ -155,6 +171,7 @@ QActor detector context ctxDetector {
     Goto doStep if "(!completedPerimeter)" else resetPlan
     	
     State bottleGrabbed {
+    	println("STATE: bottleGrabbed")
     	onMsg(grabbed : grabbed(X)) {
     		if "(payloadArg(0) == \"true\")" {
  				println("detector grabbed a bottle")
@@ -169,23 +186,20 @@ QActor detector context ctxDetector {
     }
     Transition t3
     	 whenReply stepdone -> doStep
-	
-	State boundaryFound {
-		//run itunibo.planner.plannerUtil.saveMap(mapname)
-		["completedPerimeter = true"]
-  	} Goto exploringWithPlan
   	
   	State resetPlan {
+  		println("STATE: resetPlan")
   		["nextMoves = listOf<String>().iterator()"]
   	} Goto exploringWithPlan
   	
   	State exploringWithPlan {
-  		if "(!nextMoves.hasNext() && !itunibo.planner.plannerUtil.isRoomClean())" {
+  		println("STATE: exploringWithPlan")
+  		if "(!nextMoves.hasNext() && !itunibo.planner.plannerUtil.isRoomClean() && currentTask == \"exploring\")" {
   		  ["val (x,y) = itunibo.planner.plannerUtil.getNextDirtyCell()
 		  println(\"goto [$x, $y]\")
-		  itunibo.planner.plannerUtil.setGoal(x.toString(), y.toString())
-		  nextMoves = itunibo.planner.plannerUtil.getPlanMoves()
-		  if(!nextMoves.hasNext()) {
+		  nextMoves = itunibo.planner.plannerUtil.getPlanMoves(x, y)
+		  println(itunibo.planner.plannerUtil.getPlanMoves(x, y).asSequence().toList())
+		if(!nextMoves.hasNext()) {
 			itunibo.planner.plannerUtil.setObstacle(x, y)
 			RoomMap = itunibo.planner.plannerUtil.getMap()
 		    resource.setProperty(\"RoomMap\", RoomMap)
@@ -194,6 +208,7 @@ QActor detector context ctxDetector {
   	} Goto terminating if "(itunibo.planner.plannerUtil.isRoomClean() && currentTask == \"exploring\")" else takeNextMove
   	
   	State takeNextMove {
+  		println("STATE: takeNextMove")
   		["nextMove = \"\" "]
   		if "(nextMoves.hasNext())" {
   			["nextMove = nextMoves.next()"]
@@ -201,34 +216,44 @@ QActor detector context ctxDetector {
   	} Goto planDone if "(nextMove == \"\")" else checkW
   	
   	State planDone {
+  		println("STATE: planDone")
   	} Goto exploringWithPlan if "(currentTask == \"exploring\")" else destinationReached
   	
   	State checkW {
+  		println("STATE: checkW")
   	} Goto doStep if "(nextMove == \"w\")" else checkD
   	
   	State checkD {
+  		println("STATE: checkD")
   	} Goto rotateRight if "(nextMove == \"d\")" else checkA
   	
   	State rotateRight {
+  		println("STATE: rotateRight")
   		forward smartrobot -m cmd : cmd(d)
 		run itunibo.planner.moveUtils.rotateRight90(myself)
 		delay 1000
   	} Goto exploringWithPlan
   	
   	State checkA {
+  		println("STATE: checkA")
   	} Goto rotateLeft if "(nextMove == \"a\")" else exploringWithPlan
   	
   	State rotateLeft {
+  		println("STATE: rotateLeft")
   		forward smartrobot -m cmd : cmd(a)
 	    run itunibo.planner.moveUtils.rotateLeft90(myself)
 	    delay 1000
   	} Goto exploringWithPlan
 	
 	State emptingBox {
-		["currentTask = \"emptingBox\" "]
-	}
+		println("STATE: emptingBox")
+		["currentTask = \"emptingBox\" 
+		  println(itunibo.planner.plannerUtil.goPlasticBoxMoves().asSequence().toList())
+ 		  nextMoves = itunibo.planner.plannerUtil.goPlasticBoxMoves() "]
+	} Goto exploringWithPlan
 	
 	State goingHome {
+		println("STATE: goingHome")
 		println("Detector going home")
 		["currentTask = \"goinghome\"
 		  nextMoves = itunibo.planner.plannerUtil.goHomeMoves()
@@ -236,11 +261,13 @@ QActor detector context ctxDetector {
 	} Goto exploringWithPlan
 	
 	State terminating {
+		println("STATE: terminating")
 		println("Detector terminated the work")
 		
 	} Goto goingHome if "(SpaceAvailable == NDB)" else goingPlasticBox
 	
 	State goingPlasticBox {
+		println("STATE: goingPlasticBox")
 		println("Detector going to plasticbox")
 		["currentTask = \"emptingBoxTerminate\"
 		  nextMoves = itunibo.planner.plannerUtil.goPlasticBoxMoves()
@@ -248,34 +275,51 @@ QActor detector context ctxDetector {
 	} Goto exploringWithPlan
 	
 	State emptingDetector {
-		["val quantity = NDB - SpaceAvailable"]
-		request plasticbox -m throwaway : throwaway(quantity)
+		println("STATE: emptingDetector")
+		[" waitingForSupervisor = \"false\"
+		   resource.setProperty(\"waitingForSupervisor\", waitingForSupervisor)
+		   val Quantity = NDB - SpaceAvailable 
+		   println(Quantity)"]
+		request plasticbox -m throwaway : throwaway($Quantity)
 	} Transition t4
 		whenReply throwed -> throwedBottles
-			
+		
 	State throwedBottles {
+		println("STATE: throwedBottles")
 		onMsg(throwed : throwed(QUANTITY)) {
-			["plasticBoxFull = (payloadArg(0).toInt() == 0)"]
-			if "(plasticBoxFull)" {
-				//scrivi al supervisor
-			}
+			["plasticBoxFull = (payloadArg(0).toInt() == 0)
+			  if (plasticBoxFull) {
+				waitingForSupervisor = \"true\"
+				resource.setProperty(\"waitingForSupervisor\", waitingForSupervisor)
+			  } else {
+				   SpaceAvailable += payloadArg(0).toInt()
+		   		   resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+			  } "]
 		}
 	} Goto waitForSupervisorCommand if "(plasticBoxFull)" else chooseDestination
 	
 	State chooseDestination {
+		println("STATE: chooseDestination")
 	} Goto goingHome if "(currentTask == \"emptingBoxTerminate\" )" else goingLastPosition
 	
 	State goingLastPosition {
-		//torno alla bottiglia
-		["currentTask == \"exploring\" "]
+		println("STATE: goingLastPosition")
+		["	currentTask = \"goingBottle\"
+		  	nextMoves = itunibo.planner.plannerUtil.getSafePlanMoves(lastPosition.first, lastPosition.second)	"]
 	} Goto exploringWithPlan
 	
 	State waitForSupervisorCommand {
+		println("STATE: waitForSupervisorCommand")
 		println("waiting for a command from supervisor...")
 	}
 	Transition t5
  		whenMsg continue -> emptingDetector
 	
 	State destinationReached {
-	} Goto discoveryHome if "(currentTask == \"goinghome\" )" else emptingDetector
+		println("STATE: destinationReached")
+	} Goto discoveryHome if "(currentTask == \"goinghome\" )" else destinationReached2
+	
+	State destinationReached2 {
+		println("STATE: destinationReached2")
+	} Goto exploring if "(currentTask == \"goingBottle\" )" else emptingDetector
 }

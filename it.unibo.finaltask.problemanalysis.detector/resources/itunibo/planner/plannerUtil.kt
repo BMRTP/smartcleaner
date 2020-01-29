@@ -391,8 +391,21 @@ object plannerUtil {
 		return Pair(1,1) //TODO: fixit
 	}
 	
-	fun getPlanMoves(): Iterator<String> {
+	fun getPlanMoves(x: Int, y: Int): Iterator<String> {
+		setGoal(x, y)
 		return doPlan()!!.map { it.toString() }.iterator()
+	}
+	
+	fun getSafePlanMoves(x: Int, y: Int): Iterator<String> {
+		val oldMap = RoomMap.getRoomMap()
+		println("OLD MAP" + oldMap.toString())
+		val newMap = RoomMap.mapFromString(oldMap.toString().replace('0', 'X'))
+		newMap.put(x, y, Box(false, true, false))
+		RoomMap.setRoomMap(newMap)
+		println("NEW MAP" + newMap.toString())
+		val res = getPlanMoves(x , y)
+		RoomMap.setRoomMap(oldMap)
+		return res
 	}
 	
 	fun setObstacle(x: Int, y: Int) {
@@ -404,15 +417,28 @@ object plannerUtil {
 	}
 	
 	fun goHomeMoves(): Iterator<String> {
-		if(initialState!!.getX() != 1 && initialState!!.getY() != 1) {
-			setGoal(1, 1)
-			return getPlanMoves()
-		} else {
+		if(initialState!!.getX() == 1 && initialState!!.getY() == 1) {
 			return listOf<String>().iterator()
+		} else {
+			println("SAFE PLAN " + getSafePlanMoves(1, 1).asSequence().toList())
+			return getSafePlanMoves(1, 1)
 		}
 	}
 	fun goPlasticBoxMoves(): Iterator<String> {
 		return goHomeMoves()
+	}
+	
+	fun getAHeadPosition(): Pair<Int, Int> {
+		 val dir = initialState!!.direction
+		 var x = initialState!!.x
+		 var y = initialState!!.y
+		 when( dir ){
+			 Direction.UP    -> y - 1
+			 Direction.RIGHT -> x + 1
+			 Direction.LEFT  -> x - 1
+			 Direction.DOWN  -> y + 1
+		 }
+		return Pair(x, y)
 	}
 }
 fun main() {
