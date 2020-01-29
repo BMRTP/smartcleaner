@@ -7,9 +7,9 @@ Request gettvoc : gettvoc(X)
 Reply tvoc : tvoc(VALUE)
 
 Context ctxWRoom ip [ host= "localhost" port= 8020 ]
-//Context ctxDetector ip [ host= "127.0.0.1" port= 8022 ]
+Context ctxDetector ip [ host= "127.0.0.1" port= 8022 ]
 
-//ExternalQActor detector context ctxDetector
+ExternalQActor detector context ctxDetector
 
 QActor roomagent context ctxWRoom { 
 	[" val TVOCHighThreshold = 200.0
@@ -34,7 +34,7 @@ QActor roomagent context ctxWRoom {
 	
 	State alerting {
 		println("roomagent alerted, suspending detector")
-		//forward detector -m suspend: suspend(true)
+		forward detector -m suspend: suspend(true)
 	}
 	Goto alerted
 	

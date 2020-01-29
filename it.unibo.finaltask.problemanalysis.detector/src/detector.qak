@@ -57,23 +57,26 @@ QActor detector context ctxDetector {
 	   var nextMoves = listOf<String>().iterator()
 	   var nextMove = \"\"
 	   var plasticBoxFull = false
+
+	   var WaitCommandTime = 5L
 		"]
 	   
 	State start initial {  
 		println("detector starts")
 		run itunibo.planner.plannerUtil.initAI()
+		[" /*val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
+		   if (a > 0 && b > 0) {
+		   completedPerimeter = true
+		   RoomMap = itunibo.planner.plannerUtil.getMap()
+		   resource.setProperty(\"RoomMap\", RoomMap)
+		} */"]
 	}
 	Goto discoveryHome
 	
 	State discoveryHome {
 		println("STATE: discoveryHome")
 		println("waiting for a command...")
-		[" /*val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
-		if (a > 0 && b > 0) {
-			completedPerimeter = true
-			RoomMap = itunibo.planner.plannerUtil.getMap()
-		    resource.setProperty(\"RoomMap\", RoomMap)
-		}*/ "]
+		
 	}
 	Transition commandReceived
  			whenMsg explore -> exploring
@@ -103,6 +106,14 @@ QActor detector context ctxDetector {
 	} Goto doStep
 	
 	State doStep {
+		["startTimer()"]
+	} Transition a
+		whenTimeVar WaitCommandTime  -> stepping
+		whenMsg explore -> exploring
+ 		whenMsg suspend -> goingHome
+ 		whenMsg terminate -> terminating
+	
+	State stepping {
 		println("STATE: doStep")
 		request smartrobot -m step : step($StepTime)
 	}

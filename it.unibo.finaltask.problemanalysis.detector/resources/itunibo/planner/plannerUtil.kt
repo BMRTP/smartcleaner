@@ -283,14 +283,14 @@ object plannerUtil {
 	}	
 
 	//Box(boolean isObstacle, boolean isDirty, boolean isRobot)
-    fun setGoal( x: Int, y: Int) {
+    fun setGoal(x: Int, y: Int, direction : Direction? = null) {
         try {
             println("setGoal $x,$y while robot in cell: ${getPosX()}, ${getPosY()} direction=${getDirection()}")	
             RoomMap.getRoomMap().put(x, y, Box(false, true, false))
 			//initialState = RobotState(getPosX(), getPosY(), initialState!!.direction ) 
             goalTest = GoalTest { state  : Any ->
                 val robotState = state as RobotState
-				(robotState.x == x && robotState.y == y)
+				(robotState.x == x && robotState.y == y && (direction == null || robotState.direction == direction))
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -391,19 +391,19 @@ object plannerUtil {
 		return Pair(1,1) //TODO: fixit
 	}
 	
-	fun getPlanMoves(x: Int, y: Int): Iterator<String> {
-		setGoal(x, y)
+	fun getPlanMoves(x: Int, y: Int, direction : Direction? = null): Iterator<String> {
+		setGoal(x, y, direction)
 		return doPlan()!!.map { it.toString() }.iterator()
 	}
 	
-	fun getSafePlanMoves(x: Int, y: Int): Iterator<String> {
+	fun getSafePlanMoves(x: Int, y: Int, direction : Direction? = null): Iterator<String> {
 		val oldMap = RoomMap.getRoomMap()
-		println("OLD MAP" + oldMap.toString())
+		//println("OLD MAP" + oldMap.toString())
 		val newMap = RoomMap.mapFromString(oldMap.toString().replace('0', 'X'))
 		newMap.put(x, y, Box(false, true, false))
 		RoomMap.setRoomMap(newMap)
-		println("NEW MAP" + newMap.toString())
-		val res = getPlanMoves(x , y)
+		//println("NEW MAP" + newMap.toString())
+		val res = getPlanMoves(x , y, direction)
 		RoomMap.setRoomMap(oldMap)
 		return res
 	}
@@ -420,8 +420,8 @@ object plannerUtil {
 		if(initialState!!.getX() == 1 && initialState!!.getY() == 1) {
 			return listOf<String>().iterator()
 		} else {
-			println("SAFE PLAN " + getSafePlanMoves(1, 1).asSequence().toList())
-			return getSafePlanMoves(1, 1)
+			//println("SAFE PLAN " + getSafePlanMoves(1, 1).asSequence().toList())
+			return getSafePlanMoves(1, 1, Direction.DOWN)
 		}
 	}
 	fun goPlasticBoxMoves(): Iterator<String> {
@@ -433,10 +433,10 @@ object plannerUtil {
 		 var x = initialState!!.x
 		 var y = initialState!!.y
 		 when( dir ){
-			 Direction.UP    -> y - 1
-			 Direction.RIGHT -> x + 1
-			 Direction.LEFT  -> x - 1
-			 Direction.DOWN  -> y + 1
+			 Direction.UP    -> y -= 1
+			 Direction.RIGHT -> x += 1
+			 Direction.LEFT  -> x -= 1
+			 Direction.DOWN  -> y += 1
 		 }
 		return Pair(x, y)
 	}

@@ -9,7 +9,7 @@ class tvocAdapterQa(name: String) : ActorBasic(name) {
 	init {
 		println("		--- tvocAdapterQa | start")
 		println("		--- tvocAdapterQa | init virtual tvoc sensor")
-		tvocVirtual.initSensor(1.0)
+		tvocVirtual.initSensor(0.0)
 	}
 
 	override suspend fun actorBody(msg: ApplMessage) {
