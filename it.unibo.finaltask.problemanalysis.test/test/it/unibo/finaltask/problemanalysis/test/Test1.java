@@ -19,23 +19,25 @@ public class Test1 {
 	
 	public static final String PREFIX_WINDOW_NAME = "roomcleaner_";
 	
+	
+	public static final String COAPSERVER_WINDOW_NAME = "coapserver";
 	public static final String ROBOT_WINDOW_NAME = "robot";
 	public static final String PLASTICBOX_WINDOW_NAME = "plasticbox";
 	public static final String WROOM_WINDOW_NAME = "wroom";
 	public static final String DETECTOR_WINDOW_NAME = "detector";
 	
+	public static final String COAPSERVER_PROJECT_NAME = "it.unibo.finaltask.coapserver";
 	public static final String ROBOT_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.robot";
 	public static final String PLASTICBOX_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.plasticbox";
 	public static final String WROOM_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.wroom";
 	public static final String DETECTOR_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.detector";
 	
 	
+	public static final String COAPSERVER_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + COAPSERVER_WINDOW_NAME + "\" /d \"../"+ COAPSERVER_PROJECT_NAME +"\" gradle run";
 	public static final String ROBOT_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + ROBOT_WINDOW_NAME + "\" /d \"../"+ ROBOT_PROJECT_NAME +"\" gradle run";
 	public static final String PLASTICBOX_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + PLASTICBOX_WINDOW_NAME + "\" /d \"../"+ PLASTICBOX_PROJECT_NAME +"\" gradle run";
 	public static final String WROOM_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + WROOM_WINDOW_NAME + "\" /d \"../"+ WROOM_PROJECT_NAME +"\" gradle run";
 	public static final String DETECTOR_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + DETECTOR_WINDOW_NAME + "\" /d \"../"+ DETECTOR_PROJECT_NAME +"\" gradle run";
-
-	private Thread coapServer;
 	
 	private static WebDriver driver;
 	
@@ -52,8 +54,7 @@ public class Test1 {
 	@Before
 	public void startComponents() throws Exception {
 		
-		coapServer = new Thread(() -> it.unibo.finaltask.coapserver.MainKt.main());
-		coapServer.start();
+		Runtime.getRuntime().exec(COAPSERVER_START_CMD);
 		
 		Thread.sleep(2000);
 		
@@ -91,8 +92,6 @@ public class Test1 {
 	@SuppressWarnings("deprecation")
 	@After
 	public void stopComponents() throws Exception {
-		coapServer.stop();
-		
 		Runtime.getRuntime().exec("taskkill /FI \"WindowTitle eq "+ PREFIX_WINDOW_NAME +"*\" /T /F");
 		
 		driver.close();

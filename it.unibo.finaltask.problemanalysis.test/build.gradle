@@ -22,10 +22,7 @@ sourceSets {
 }
 
 dependencies {
-    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59'
-    
-    compile project(':CoapServer')
-    
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59'    
     testCompile "junit:junit:4.11"
 }
 

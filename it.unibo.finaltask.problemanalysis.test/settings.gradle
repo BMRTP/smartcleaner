@@ -1,2 +1,0 @@
-include   ':CoapServer'
-project(':CoapServer').projectDir = new File(settingsDir, '../it.unibo.finaltask.coapserver')
