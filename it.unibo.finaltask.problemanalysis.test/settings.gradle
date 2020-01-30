@@ -1,6 +1,2 @@
-include   ':CoapServer', ':Detector', ':PlasticBox', ':Robot', ':WRoom'
+include   ':CoapServer'
 project(':CoapServer').projectDir = new File(settingsDir, '../it.unibo.finaltask.coapserver')
-project(':Detector').projectDir = new File(settingsDir, '../it.unibo.finaltask.problemanalysis.detector')
-project(':PlasticBox').projectDir = new File(settingsDir, '../it.unibo.finaltask.problemanalysis.plasticbox')
-project(':Robot').projectDir = new File(settingsDir, '../it.unibo.finaltask.problemanalysis.robot')
-project(':WRoom').projectDir = new File(settingsDir, '../it.unibo.finaltask.problemanalysis.wroom')

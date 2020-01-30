@@ -25,10 +25,6 @@ dependencies {
     compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59'
     
     compile project(':CoapServer')
-    compile project(':Detector')
-    compile project(':PlasticBox')
-    compile project(':Robot')
-    compile project(':WRoom')
     
     testCompile "junit:junit:4.11"
 }
