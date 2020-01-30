@@ -29,8 +29,6 @@ dependencies {
     testCompile "junit:junit:4.11"
 }
 
-apply plugin: 'java'
-
 test {
     testLogging {
         outputs.upToDateWhen {false}

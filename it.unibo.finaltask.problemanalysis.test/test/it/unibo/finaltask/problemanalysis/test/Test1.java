@@ -11,29 +11,29 @@ import org.openqa.selenium.chrome.ChromeDriver;
 
 
 public class Test1 {
-	public static String BASE_URL = "http://localhost:8090";
-	public static String CHROME_DRIVER_PATH = "C:\\chromedriver.exe";
+	public static final String BASE_URL = "http://localhost:8090";
+	public static final String CHROME_DRIVER_PATH = "C:\\chromedriver.exe";
 	
-	public static String VIRTUAL_ROBOT_SHORTCUT_PATH = "C:\\Users\\loren\\Desktop\\virtualRobot.lnk";
-	public static String VIRTUAL_ROBOT_WINDOW_NAME = "virtualRobot";
+	public static final String VIRTUAL_ROBOT_SHORTCUT_PATH = "C:\\Users\\loren\\Desktop\\virtualRobot.lnk";
+	public static final String VIRTUAL_ROBOT_WINDOW_NAME = "virtualRobot";
 	
-	public static String PREFIX_WINDOW_NAME = "roomcleaner_";
+	public static final String PREFIX_WINDOW_NAME = "roomcleaner_";
 	
-	public static String ROBOT_WINDOW_NAME = "robot";
-	public static String PLASTICBOX_WINDOW_NAME = "plasticbox";
-	public static String WROOM_WINDOW_NAME = "wroom";
-	public static String DETECTOR_WINDOW_NAME = "detector";
+	public static final String ROBOT_WINDOW_NAME = "robot";
+	public static final String PLASTICBOX_WINDOW_NAME = "plasticbox";
+	public static final String WROOM_WINDOW_NAME = "wroom";
+	public static final String DETECTOR_WINDOW_NAME = "detector";
 	
-	public static String ROBOT_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.robot";
-	public static String PLASTICBOX_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.plasticbox";
-	public static String WROOM_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.wroom";
-	public static String DETECTOR_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.detector";
+	public static final String ROBOT_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.robot";
+	public static final String PLASTICBOX_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.plasticbox";
+	public static final String WROOM_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.wroom";
+	public static final String DETECTOR_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.detector";
 	
 	
-	public static String ROBOT_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + ROBOT_WINDOW_NAME + "\" /d \"../"+ ROBOT_PROJECT_NAME +"\" gradle run";
-	public static String PLASTICBOX_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + PLASTICBOX_WINDOW_NAME + "\" /d \"../"+ PLASTICBOX_PROJECT_NAME +"\" gradle run";
-	public static String WROOM_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + WROOM_WINDOW_NAME + "\" /d \"../"+ WROOM_PROJECT_NAME +"\" gradle run";
-	public static String DETECTOR_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + DETECTOR_WINDOW_NAME + "\" /d \"../"+ DETECTOR_PROJECT_NAME +"\" gradle run";
+	public static final String ROBOT_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + ROBOT_WINDOW_NAME + "\" /d \"../"+ ROBOT_PROJECT_NAME +"\" gradle run";
+	public static final String PLASTICBOX_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + PLASTICBOX_WINDOW_NAME + "\" /d \"../"+ PLASTICBOX_PROJECT_NAME +"\" gradle run";
+	public static final String WROOM_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + WROOM_WINDOW_NAME + "\" /d \"../"+ WROOM_PROJECT_NAME +"\" gradle run";
+	public static final String DETECTOR_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + DETECTOR_WINDOW_NAME + "\" /d \"../"+ DETECTOR_PROJECT_NAME +"\" gradle run";
 
 	private Thread coapServer;
 	
