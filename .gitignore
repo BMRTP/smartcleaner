@@ -18,3 +18,4 @@
 !it.unibo.finaltask.problemanalysis.test/settings.gradle
 !it.unibo.finaltask.problemanalysis.test/src/**
 !it.unibo.finaltask.problemanalysis.test/test/**
+!it.unibo.finaltask.problemanalysis.test/resources/**

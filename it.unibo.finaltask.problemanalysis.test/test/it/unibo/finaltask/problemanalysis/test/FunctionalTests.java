@@ -1,6 +1,7 @@
 package it.unibo.finaltask.problemanalysis.test;
 
 
+import org.eclipse.californium.core.CoapClient;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -9,8 +10,11 @@ import org.junit.Test;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 
+import it.unibo.finaltask.problemanalysis.test.utils.QActorInterface;
+import itunibo.planner.model.RoomMap;
 
-public class Test1 {
+
+public class FunctionalTests {
 	public static final String BASE_URL = "http://localhost:8090";
 	public static final String CHROME_DRIVER_PATH = "C:\\chromedriver.exe";
 	
@@ -77,16 +81,48 @@ public class Test1 {
 		
 		driver = new ChromeDriver();
 		driver.get(BASE_URL);
+		Thread.sleep(10000);
 	}
 
 	@Test
-	public void test() throws Exception {
-		Thread.sleep(10000);
+	public void DetectorCanGrabABottle() throws Exception {
+		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
+		
+		CoapClient client = new CoapClient("coap://localhost:5683/detector/SpaceAvailable");
+		client.setTimeout(1000L);
+		
+		String sa = client.get().getResponseText();
+		while(sa.isEmpty()) {
+			sa = client.get().getResponseText();
+			Thread.sleep(500);
+		}
+				
+		int sa1 = Integer.parseInt(sa);
+		
+		sender.sendMessage("msg(explore, dispatch, gui, detector, explore(x), 1)");
+		sender.close();
+		
+		Thread.sleep(20000);
+		
+		int sa2 = Integer.parseInt(client.get().getResponseText());
+		
+		assert(sa1 > sa2);
 	}
 	
 	@Test
-	public void test2() throws Exception {
-		Thread.sleep(10000);
+	public void DetectorCanReturnHome() throws Exception {
+		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
+		sender.sendMessage("msg(explore, dispatch, gui, detector, explore(x), 1)");
+		Thread.sleep(8000);
+		sender.sendMessage("msg(terminate, dispatch, gui, detector, terminate(x), 1)");
+		sender.close();
+		Thread.sleep(15000);
+		
+		CoapClient client = new CoapClient("coap://localhost:5683/detector/RoomMap");
+		client.setTimeout(1000L);
+		RoomMap map1 = RoomMap.mapFromString(client.get().getResponseText());
+		
+		assert(map1.isRobot(1,1));
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -97,7 +133,7 @@ public class Test1 {
 		driver.close();
 		driver.quit();
 		virtualRobot.destroy();
-		Thread.sleep(2000);
+		Thread.sleep(10000);
 	}
 	
 	@AfterClass

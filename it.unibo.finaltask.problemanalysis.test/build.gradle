@@ -14,6 +14,7 @@ mainClassName = 'it.unibo.finaltask.problemanalysis.test.Main'
 
 sourceSets {
     main.java.srcDirs += 'src'
+    main.java.srcDirs += 'resources'
     test {
     	java {
     		srcDirs = ["test"]
@@ -22,6 +23,16 @@ sourceSets {
 }
 
 dependencies {
+
+	//COAP
+	// https://mvnrepository.com/artifact/org.eclipse.californium/californium-core
+	compile group: 'org.eclipse.californium', name: 'californium-core', version: '2.0.0-M12'
+	// https://mvnrepository.com/artifact/org.eclipse.californium/californium-proxy
+	compile group: 'org.eclipse.californium', name: 'californium-proxy', version: '2.0.0-M12'
+	//LOG4j	
+	compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
+    
+    
     compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59'    
     testCompile "junit:junit:4.11"
 }
