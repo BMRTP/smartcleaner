@@ -1,3 +1,4 @@
+package it.unibo.finaltask.coapserver
 import org.eclipse.californium.core.CoapServer
 import org.eclipse.californium.core.coap.CoAP.ResponseCode.CHANGED;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode.CREATED;
@@ -7,6 +8,7 @@ import org.eclipse.californium.core.server.resources.CoapExchange
 import org.eclipse.californium.core.CoapClient
 import org.eclipse.californium.core.CoapResponse
 import org.eclipse.californium.core.coap.MediaTypeRegistry
+
 
 object coapServer {
 	val server = CoapServer()

@@ -6,3 +6,8 @@
 !it.unibo.finaltask.coapserver/build.gradle
 !it.unibo.finaltask.coapserver/src/*.kt
 /.metadata/
+
+!it.unibo.finaltask.problemanalysis.test/build.gradle
+!it.unibo.finaltask.problemanalysis.test/settings.gradle
+!it.unibo.finaltask.problemanalysis.test/src/**
+!it.unibo.finaltask.problemanalysis.test/test/**
