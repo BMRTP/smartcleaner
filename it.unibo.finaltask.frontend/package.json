@@ -1,0 +1,19 @@
+{
+  "name": "it.unibo.finaltask.frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "net": "^1.0.2",
+    "node-coap-client": "^1.0.2",
+    "promise-socket": "^6.0.3",
+    "socket.io": "^2.3.0",
+    "socket.io-client": "^2.3.0"
+  }
+}

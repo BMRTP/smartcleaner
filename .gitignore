@@ -19,3 +19,5 @@
 !it.unibo.finaltask.problemanalysis.test/src/**
 !it.unibo.finaltask.problemanalysis.test/test/**
 !it.unibo.finaltask.problemanalysis.test/resources/**
+!it.unibo.finaltask.frontend/supports/**
+!it.unibo.finaltask.frontend/*
