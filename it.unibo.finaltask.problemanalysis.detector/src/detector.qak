@@ -21,6 +21,8 @@ Reply    grabbed  : grabbed(X) //true, false
 Request throwaway : throwaway(QUANTITY)
 Reply   throwed : throwed(QUANTITY)
 
+Dispatch init : init(NDB, WITHMAP)
+
 Context ctxDetector ip [ host= "localhost" port= 8022 ]  
 Context ctxRobot ip [ host= "127.0.0.1" port= 8018 ]  
 Context ctxPlasticBox ip [ host= "127.0.0.1" port= 8016 ]
@@ -33,15 +35,19 @@ ExternalQActor plasticbox context ctxPlasticBox
 QActor detector context ctxDetector { 
 	[" 
 	   val resource = itunibo.resource.CoapResourceSupport(name, \"coap://localhost:5683\")
-	   val NDB = 1
+	   var NDB = 5
 	   var SpaceAvailable = NDB
 	   resource.createProperty(\"SpaceAvailable\", SpaceAvailable.toString())
 
 	   var RoomMap = \"\" 
 	   resource.createProperty(\"RoomMap\", RoomMap)
 
+	   var currentTask = \"\" //exploring, goinghome, emptingBox, emptingBoxTerminating, goingBottle
+	   resource.createProperty(\"currentTask\", currentTask)
+
 	   var waitingForSupervisor: String = \"false\"
 	   resource.createProperty(\"waitingForSupervisor\", waitingForSupervisor)
+
 	   val mapname     = \"roomMbot3\"
 
 	   var wasABottle = false
@@ -49,8 +55,7 @@ QActor detector context ctxDetector {
        var StepTime = 330
 	   var BackStepTime = 0
 	   var completedPerimeter = false
-	   var currentTask = \"\" //exploring, goinghome, emptingBox, emptingBoxTerminating, goingBottle
-
+	   
 	   var posX = 1
        var posY = 1
 	   var lastPosition = Pair(1,1)
@@ -60,23 +65,34 @@ QActor detector context ctxDetector {
 
 	   var WaitCommandTime = 5L
 		"]
-	   
 	State start initial {  
 		println("detector starts")
 		run itunibo.planner.plannerUtil.initAI()
-		[" /*val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
-		   if (a > 0 && b > 0) {
-		   completedPerimeter = true
-		   RoomMap = itunibo.planner.plannerUtil.getMap()
-		   resource.setProperty(\"RoomMap\", RoomMap)
-		} */"]
-	}
-	Goto discoveryHome
+	} Transition t
+		whenMsg init -> initializing
+		whenMsg explore -> exploring
+ 		whenMsg suspend -> goingHome
+ 		whenMsg terminate -> terminating
+ 		
+	State initializing {
+		onMsg(init : init(NDB, WITHMAP)) {
+		  ["NDB = payloadArg(0).toInt()
+				SpaceAvailable = NDB
+			if (payloadArg(1) == \"true\") {
+				val (a, b) = itunibo.planner.plannerUtil.loadRoomMap(\"roomMbot3\")
+			    if (a > 0 && b > 0) {
+				    completedPerimeter = true
+				    RoomMap = itunibo.planner.plannerUtil.getMap()
+				    resource.setProperty(\"RoomMap\", RoomMap)
+				}
+			} "]
+			
+		}
+	} Goto discoveryHome
 	
 	State discoveryHome {
 		println("STATE: discoveryHome")
-		println("waiting for a command...")
-		
+		println("waiting for a command...")	
 	}
 	Transition commandReceived
  			whenMsg explore -> exploring
@@ -85,7 +101,8 @@ QActor detector context ctxDetector {
 	
 	State exploring { 
 		println("STATE: exploring")
-	  [ "currentTask = \"exploring\" "]
+	  [ "currentTask = \"exploring\" 
+		resource.setProperty(\"currentTask\", currentTask) "]
 	} Goto exploringWithPlan if "(completedPerimeter)" else continuePerimeter
 	
 	State updatePosition {
@@ -258,7 +275,8 @@ QActor detector context ctxDetector {
 	
 	State emptingBox {
 		println("STATE: emptingBox")
-		["currentTask = \"emptingBox\" 
+		["currentTask = \"emptingBox\"
+		  resource.setProperty(\"currentTask\", currentTask) 
 		  println(itunibo.planner.plannerUtil.goPlasticBoxMoves().asSequence().toList())
  		  nextMoves = itunibo.planner.plannerUtil.goPlasticBoxMoves() "]
 	} Goto exploringWithPlan
@@ -267,6 +285,7 @@ QActor detector context ctxDetector {
 		println("STATE: goingHome")
 		println("Detector going home")
 		["currentTask = \"goinghome\"
+		  resource.setProperty(\"currentTask\", currentTask)
 		  nextMoves = itunibo.planner.plannerUtil.goHomeMoves()
 		"]
 	} Goto exploringWithPlan
@@ -281,6 +300,7 @@ QActor detector context ctxDetector {
 		println("STATE: goingPlasticBox")
 		println("Detector going to plasticbox")
 		["currentTask = \"emptingBoxTerminate\"
+		  resource.setProperty(\"currentTask\", currentTask)
 		  nextMoves = itunibo.planner.plannerUtil.goPlasticBoxMoves()
 		"]
 	} Goto exploringWithPlan
@@ -316,6 +336,7 @@ QActor detector context ctxDetector {
 	State goingLastPosition {
 		println("STATE: goingLastPosition")
 		["	currentTask = \"goingBottle\"
+			resource.setProperty(\"currentTask\", currentTask)
 		  	nextMoves = itunibo.planner.plannerUtil.getSafePlanMoves(lastPosition.first, lastPosition.second)	"]
 	} Goto exploringWithPlan
 	

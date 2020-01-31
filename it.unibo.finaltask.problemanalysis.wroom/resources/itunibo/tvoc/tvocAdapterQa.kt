@@ -18,5 +18,9 @@ class tvocAdapterQa(name: String) : ActorBasic(name) {
 			val m = MsgUtil.buildReply(this.name, "tvoc", "tvoc($value)",  msg.msgSender())
 			sendMessageToActor( m, msg.msgSender(), msg.conn )
 		}
+		if(msg.isDispatch() && msg.msgId() == "set") {
+			val value = (Term.createTerm(msg.msgContent()) as Struct).getArg(0).toString()
+			tvocVirtual.initSensor(value.toDouble())
+		}
 	}
 }

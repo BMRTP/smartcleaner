@@ -1,7 +1,5 @@
 package it.unibo.finaltask.problemanalysis.test;
 
-
-import org.eclipse.californium.core.CoapClient;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -10,6 +8,8 @@ import org.junit.Test;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 
+import it.unibo.finaltask.problemanalysis.test.utils.CoapUtils;
+import it.unibo.finaltask.problemanalysis.test.utils.Maps;
 import it.unibo.finaltask.problemanalysis.test.utils.QActorInterface;
 import itunibo.planner.model.RoomMap;
 
@@ -18,7 +18,7 @@ public class FunctionalTests {
 	public static final String BASE_URL = "http://localhost:8090";
 	public static final String CHROME_DRIVER_PATH = "C:\\chromedriver.exe";
 	
-	public static final String VIRTUAL_ROBOT_SHORTCUT_PATH = "C:\\Users\\loren\\Desktop\\virtualRobot.lnk";
+	public static final String VIRTUAL_ROBOT_SHORTCUT_PATH = "C:\\Users\\emanu\\OneDrive\\Desktop\\virtualRobot.lnk";
 	public static final String VIRTUAL_ROBOT_WINDOW_NAME = "virtualRobot";
 	
 	public static final String PREFIX_WINDOW_NAME = "roomcleaner_";
@@ -59,70 +59,234 @@ public class FunctionalTests {
 	public void startComponents() throws Exception {
 		
 		Runtime.getRuntime().exec(COAPSERVER_START_CMD);
-		
 		Thread.sleep(2000);
 		
 		Runtime.getRuntime().exec(ROBOT_START_CMD);
-		
-		Thread.sleep(2000);
-		
 		Runtime.getRuntime().exec(PLASTICBOX_START_CMD);
-		
-		Thread.sleep(2000);
-		
 		Runtime.getRuntime().exec(WROOM_START_CMD);
-		
-		Thread.sleep(2000);
-		
-		Runtime.getRuntime().exec(DETECTOR_START_CMD);
-		
-		Thread.sleep(2000);
-		
+		Runtime.getRuntime().exec(DETECTOR_START_CMD);		
 		
 		driver = new ChromeDriver();
 		driver.get(BASE_URL);
-		Thread.sleep(10000);
+		Thread.sleep(15000);
 	}
 
+	/**
+	 * 1. Impartito il comando explore, il robot avvii il task “Explore the room”, percorrendo tutta la superficie della stanza raggiungibile.
+	 * @throws Exception
+	 */
+	@Test(timeout=300000)
+	public void detectorExploreTheEntireRoom() throws Exception {
+		QActorInterface detector = new QActorInterface("127.0.0.1", 8022);
+		detector.sendMessage("msg(explore, dispatch, gui, detector, explore(x), 1)");
+		
+		String finalMap = CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
+			String curMap = RoomMap.mapFromString(map).toString();
+			return curMap.equals(Maps.CLEAN_MAP_1) || curMap.equals(Maps.CLEAN_MAP_2) || curMap.equals(Maps.CLEAN_MAP_3);
+		});
+	}
+	
+	/**
+	 * 2. Impartito il comando suspend, il robot avvii il task “Go to home”, ritornando a discoveryHome.
+	 */
 	@Test
-	public void DetectorCanGrabABottle() throws Exception {
+	public void detectorCanReturnHome() throws Exception {
 		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
+		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
+		Thread.sleep(10000);
+		sender.sendMessage("msg(suspend, dispatch, test, detector, suspend(x), 1)");
+		sender.close();
+		Thread.sleep(15000);
 		
-		CoapClient client = new CoapClient("coap://localhost:5683/detector/SpaceAvailable");
-		client.setTimeout(1000L);
+		RoomMap map1 = RoomMap.mapFromString(CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap"));
 		
-		String sa = client.get().getResponseText();
-		while(sa.isEmpty()) {
-			sa = client.get().getResponseText();
-			Thread.sleep(500);
-		}
+		assert(map1.isRobot(1,1));
+	}
+	
+	/**
+	 * 3. Impartito il comando terminate, il robot avvii il task “Terminate the work”, ritornando a discoveryHome con il detectorBox vuoto.
+	 */
+	@Test
+	public void detectorCanTerminateWork() throws Exception {
+		final int spaceAvailable = 1;
+		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
+		sender.sendMessage("msg(init, dispatch, test, detector, init("+spaceAvailable+", false), 1)");
+		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
+		Thread.sleep(30000);
+		sender.sendMessage("msg(terminate, dispatch, test, detector, terminate(x), 1)");
+		sender.close();
+		Thread.sleep(20000);
+		
+		final RoomMap map = RoomMap.mapFromString(CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap"));
+		
+		assert(map.isRobot(1,1));
+		
+		final int space = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/detector/SpaceAvailable"));
+		
+		assert(space == spaceAvailable);
+	}
+	
+	/**
+	 * 4. Supponendo che il robot sia in fase di esplorazione, dopo l’esecuzione del task “Empty the detectorBox”, deve ritornare all’ultima posizione raggiunta in fase di esplorazione e continuarla.
+	 */
+	@Test(timeout=180000)
+	public void detectorCanContinueExplorationFromLastPosition() throws Exception {
+		final int detectorSpaceAvailable = 1;
+		final int plasticBoxSpaceAvailable = 1;
+		
+		QActorInterface plasticBox = new QActorInterface("127.0.0.1", 8016);
+		plasticBox.sendMessage("msg(init, dispatch, test, plasticbox, init("+plasticBoxSpaceAvailable+"), 1)");
+		plasticBox.close();
+		
+		QActorInterface detector = new QActorInterface("127.0.0.1", 8022);
+		detector.sendMessage("msg(init, dispatch, test, detector, init("+detectorSpaceAvailable+", false), 1)");
+		detector.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
+		detector.close();
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> task.equals("exploring"));
+
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", space -> Integer.parseInt(space) == 0);
+
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> !task.equals("exploring"));
+
+		CoapUtils.pollResourceValue("coap://localhost:5683/plasticbox/SpaceAvailable", space -> Integer.parseInt(space) == 0);
+
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> !task.equals("exploring"));
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
+			final RoomMap m = RoomMap.mapFromString(map);
+			Boolean cond = false;
+			for(int x = Maps.MINLASTPOS_X; x <= Maps.MAXLASTPOS_X; x++) {
+				for(int y = Maps.MINLASTPOS_Y; y <= Maps.MAXLASTPOS_Y; y++) {
+					cond |= m.isRobot(x, y);
+				}
+			}
+			return cond;
+		});
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> task.equals("exploring"));
+	}
+	/**
+	 * 5. Il detectorBox contenga esattamente una bottiglia a seguito della raccolta da parte del robot (supponendo che non ne abbia raccolta alcuna in precedenza).
+	 */
+	@Test
+	public void detectorCanGrabABottle() throws Exception {
+		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
 				
-		int sa1 = Integer.parseInt(sa);
+		int sa1 = Integer.parseInt(CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", x -> !x.isEmpty()));
 		
 		sender.sendMessage("msg(explore, dispatch, gui, detector, explore(x), 1)");
 		sender.close();
 		
-		Thread.sleep(20000);
+		Thread.sleep(30000);
 		
-		int sa2 = Integer.parseInt(client.get().getResponseText());
+		int sa2 = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/detector/SpaceAvailable"));
 		
 		assert(sa1 > sa2);
 	}
 	
+	/**
+	 * 6. Il robot sia in grado di gettare una bottiglia, che ha nel detectorBox, all’interno del plasticBox.
+	 */
 	@Test
-	public void DetectorCanReturnHome() throws Exception {
-		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
-		sender.sendMessage("msg(explore, dispatch, gui, detector, explore(x), 1)");
-		Thread.sleep(8000);
-		sender.sendMessage("msg(terminate, dispatch, gui, detector, terminate(x), 1)");
-		sender.close();
-		Thread.sleep(15000);
+	public void detectorCanThrowABottleInsidePlasticBox() throws Exception {
+		final int detectorSpaceAvailable = 1;
+		final int plasticBoxSpaceAvailable = 1;
 		
-		CoapClient client = new CoapClient("coap://localhost:5683/detector/RoomMap");
-		client.setTimeout(1000L);
-		RoomMap map1 = RoomMap.mapFromString(client.get().getResponseText());
+		QActorInterface plasticBox = new QActorInterface("127.0.0.1", 8016);
+		plasticBox.sendMessage("msg(init, dispatch, test, plasticbox, init("+plasticBoxSpaceAvailable+"), 1)");
+		plasticBox.close();
+		
+		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
+		sender.sendMessage("msg(init, dispatch, test, detector, init("+detectorSpaceAvailable+", false), 1)");
+		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
+		Thread.sleep(30000);
+		sender.sendMessage("msg(terminate, dispatch, test, detector, terminate(x), 1)");
+		sender.close();
+		Thread.sleep(20000);
+						
+		final int space = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/detector/SpaceAvailable"));
+		assert(space == detectorSpaceAvailable);
+		
+		final int binSpaceAvailable = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/plasticbox/SpaceAvailable"));
+		assert(binSpaceAvailable == 0);
+	}
+	
+	/**
+	 * 7. Il robot non getti una bottiglia nel plasticBox se questo è pieno e invii un messaggio al supervisore in attesa di un comando.
+	 */
+	@Test
+	public void detectorSendNotificationWhenPlasticBoxIsFull() throws Exception {
+		final int detectorSpaceAvailable = 1;
+		final int plasticBoxSpaceAvailable = 0;
+		
+		QActorInterface plasticBox = new QActorInterface("127.0.0.1", 8016);
+		plasticBox.sendMessage("msg(init, dispatch, test, plasticbox, init("+plasticBoxSpaceAvailable+"), 1)");
+		plasticBox.close();
+		
+		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
+		sender.sendMessage("msg(init, dispatch, test, detector, init("+detectorSpaceAvailable+", false), 1)");
+		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
+		Thread.sleep(30000);
+		sender.sendMessage("msg(terminate, dispatch, test, detector, terminate(x), 1)");
+		sender.close();
+		Thread.sleep(20000);
+						
+		final boolean waitingForSupervisor = Boolean.parseBoolean(CoapUtils.getResourceValue("coap://localhost:5683/detector/waitingForSupervisor"));
+		assert(waitingForSupervisor);
+	}
+	
+	/**
+	 * 8. Il robot sospenda la propria attività a fronte della ricezione del comando suspend da parte dell’agente della stanza nel caso in cui il livello di particolato sia troppo elevato.
+	 */
+	@Test
+	public void roomAgentsSuspendsDetector() throws Exception {
+		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
+		QActorInterface room = new QActorInterface("127.0.0.1", 8020);
+		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
+		Thread.sleep(9000);
+		room.sendMessage("msg(set, dispatch, test, tvocadapter, set(100.0), 1)");
+		Thread.sleep(1000);
+		room.sendMessage("msg(set, dispatch, test, tvocadapter, set(0.0), 1)");
+
+		sender.close();
+		room.close();
+		Thread.sleep(10000);
+		
+		RoomMap map1 = RoomMap.mapFromString(CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap"));
 		
 		assert(map1.isRobot(1,1));
+	}
+	
+	/**
+	 * 9. Il robot sia in grado di tornare a discoveryHome (senza incontrare ulteriori ostacoli).
+	 */
+	@Test(timeout=100000)
+	public void detectorCanReturnToDiscoveryHomeAvoidingObstacles() throws Exception {
+		QActorInterface detector = new QActorInterface("127.0.0.1", 8022);
+		detector.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> !map.isEmpty());
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
+			final RoomMap m = RoomMap.mapFromString(map);
+			Boolean cond = false;
+			for(int x = 3; x <= 5; x++) {
+				for(int y = 3; y <= 5; y++) {
+					cond |= m.isRobot(x, y);
+				}
+			}
+			return cond;
+		});
+		detector.sendMessage("msg(suspend, dispatch, test, detector, suspend(x), 1)");
+		detector.close();
+		
+		final String finalMap = CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap");
+		final int discovered = (int) finalMap.chars().filter(c -> c == '1').count();
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
+			int cells = (int) map.chars().filter(c -> c == '1').count();
+			assert(cells == discovered);
+			return RoomMap.mapFromString(map).isRobot(1, 1);
+		});
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -133,7 +297,7 @@ public class FunctionalTests {
 		driver.close();
 		driver.quit();
 		virtualRobot.destroy();
-		Thread.sleep(10000);
+		Thread.sleep(1000);
 	}
 	
 	@AfterClass

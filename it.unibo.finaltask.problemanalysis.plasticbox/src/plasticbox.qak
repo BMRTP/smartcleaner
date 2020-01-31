@@ -4,10 +4,12 @@ Dispatch empty : empty(X)
 Request throwaway : throwaway(QUANTITY)
 Reply   throwed : throwed(QUANTITY)
 
+Dispatch init : init(NPB)
+
 Context ctxPlasticBox ip [ host= "localhost" port= 8016 ]
 
 QActor plasticbox context ctxPlasticBox {
-	[" val NPB = 10
+	[" var NPB = 10
 	   var SpaceAvailable = NPB 
 	   val resource = itunibo.resource.CoapResourceSupport(name, \"coap://localhost:5683\")
 	   resource.createProperty(\"SpaceAvailable\", SpaceAvailable.toString())
@@ -16,7 +18,18 @@ QActor plasticbox context ctxPlasticBox {
 	State s0 initial {
 		println("plasticbox starts")
 	}
-	Goto ready 
+	Transition t
+		whenMsg init -> initializing
+		whenMsg empty -> reset
+		whenRequest throwaway -> set
+		
+	State initializing {
+		onMsg(init : init(NPB)) {
+		  ["NPB = payloadArg(0).toInt()
+			SpaceAvailable = NPB
+			resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())"]
+		}
+	} Goto ready
 	
 	State ready { }
 	Transition t1
