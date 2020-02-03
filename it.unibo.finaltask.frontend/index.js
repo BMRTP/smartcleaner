@@ -1,18 +1,22 @@
 const detector = require('./supports/detectorClient')
+const plasticbox = require('./supports/plasticboxClient')
 const coapClient = require('./supports/coap')
 const app = require('express')();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 
+
 var clients = []
+var updates = new Map()
 
 detector.init().then((res) => console.log("Connected to detector"))
+plasticbox.init().then((res) => console.log("Connected to plasticbox"))
 
 app.get('/', function (req, res) {
-    res.send('Hello World!')
+    res.sendFile(__dirname + '/public/index.html');
 })
   
-app.listen(8080, function () {
+server.listen(8080, function () {
     console.log('Example app listening on port 8080!')
 })
 
@@ -20,7 +24,7 @@ io.on('connection', function (socket) {
     clients.push(socket)
     socket.on('command', function (data) {
       // data = { name: name }
-      console.log("Command received: " + data)
+      console.log("Command received: " + data.name)
       switch(data.name) {
         case 'explore':
             detector.explore()
@@ -34,8 +38,12 @@ io.on('connection', function (socket) {
         case 'continue':
             detector.continuee()
             break
+        case 'empty':
+            plasticbox.empty()
+            break
       }
     })
+    updates.forEach((value, key, map) => socket.emit('update', {resource : key, value: value}))
 
     socket.on('disconnect', function() {    
         var i = clients.indexOf(socket);
@@ -53,5 +61,6 @@ coapClient.observeProperty("plasticbox/SpaceAvailable", coapUpdatesHandler)
 
 function coapUpdatesHandler(resource, value) {
     console.log("Resource: " + resource + " value: " + value)
+    updates.set(resource, value)
     clients.forEach(c => c.emit('update', { resource: resource, value: value}))
 }

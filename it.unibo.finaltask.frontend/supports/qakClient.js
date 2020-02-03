@@ -1,17 +1,20 @@
 const net = require('net');
 const {PromiseSocket} = require("promise-socket")
 
-const socket = new net.Socket()
-var promiseSocket = new PromiseSocket(socket)
 
-exports.start = (port, address) => {
-    return promiseSocket.connect(port, address)
+exports.createSocket = () => {
+    const socket = new net.Socket()
+    return new PromiseSocket(socket)
 }
 
-exports.sendMessage = (message) => {
-    return promiseSocket.write(message + "\n")
+exports.start = (socket, port, address) => {
+    return socket.connect(port, address)
 }
 
-exports.close = () => {
-    promiseSocket.destroy()
+exports.sendMessage = (socket, message) => {
+    return socket.write(message + "\n")
+}
+
+exports.close = (socket) => {
+    socket.destroy()
 }
