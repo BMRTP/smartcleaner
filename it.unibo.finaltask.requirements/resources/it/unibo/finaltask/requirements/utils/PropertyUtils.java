@@ -8,17 +8,58 @@ public class PropertyUtils {
 		return new WRoom() {
 			@Override
 			public int width() {
-				return 5;
+				return 9;
 			}
 
 			@Override
 			public int height() {
-				return 5;
+				return 7;
 			}
 
 			@Override
 			public SurfaceType surface(int x, int y) {
 				return SurfaceType.Clean;
+			}
+			
+			@Override
+			public String toString() {
+				return String.join(
+						   "\n", 
+						   "X, X, X, X, X, X, X, X,   ",
+						   "X, r, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, X, X, X, X, X, X, X, X,");
+			}
+			
+		};
+	}
+	
+	public static WRoom getInitialState() {
+		return new WRoom() {
+			@Override
+			public int width() {
+				return 9;
+			}
+
+			@Override
+			public int height() {
+				return 7;
+			}
+
+			@Override
+			public SurfaceType surface(int x, int y) {
+				return SurfaceType.Clean;
+			}
+			
+			@Override
+			public String toString() {
+				return String.join(
+						   "\n", 
+						   "X, X,",
+						   "X, r,");
 			}
 			
 		};

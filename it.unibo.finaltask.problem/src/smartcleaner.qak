@@ -1,0 +1,77 @@
+System smartcleaner
+
+Dispatch explore   : explore(X)
+Dispatch suspend   : suspend(X)
+Dispatch terminate : terminate(X)
+
+Context ctxRobot ip [ host= "localhost" port= 8018 ]  
+Context ctxWRoom ip [ host= "localhost" port= 8020 ]
+
+QActor detector context ctxRobot { 
+	[" val NDB = 10
+	   var SpaceAvailable = NDB
+	   var RoomMap = null "]
+	   
+	State start initial {  
+		println("detector starts")
+	}
+	Goto discoveryHome
+	
+	State discoveryHome {
+		println("waiting for a command...")
+	}
+	Transition commandReceived
+ 			whenMsg explore -> exploring
+ 			whenMsg suspend -> goingHome
+ 			whenMsg terminate -> terminating
+	
+	State exploring {
+		//execute the task: Explore the room.
+	}
+	
+	State emptingBox {
+		//execute the task: Empty the detectorBox.
+	}
+	
+	State goingHome {
+		//execute the task: Go to home.
+	}
+	
+	State terminating {
+		//execute the task: Terminate the work.
+	}
+}
+
+QActor roomagent context ctxWRoom { 
+	[" val TVOCHighThreshold = 200 "]
+	
+	State start initial {  
+		println("roomagent starts")
+	}
+	Goto notallerted
+	
+	State notallerted {
+	}
+	
+	State allerting {
+		forward detector -m suspend: suspend(true)
+	}
+	Goto allerted
+	
+	State allerted {
+	}
+}
+
+QActor plasticbox context ctxWRoom { 
+	[" val NPB = 10
+	   var SpaceAvailable = NPB "]
+	   
+	State start initial {  
+		println("plasticbox starts")
+	}
+	Goto ready
+	
+	State ready {
+		//update remaining space and make it available
+	}
+}
