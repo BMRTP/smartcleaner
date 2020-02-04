@@ -11,14 +11,30 @@ public class RequirementsTests {
 	 * @throws Exception
 	 */
 	@Test(timeout=3000)
-	public void detectorExploreTheEntireRoom() throws Exception {
+	public void detectorExploreTheEntireRoom() {
 		QakUtils.sendExploreToDetector();
 		WRoom room = PropertyUtils.waitUntilRoomIsExplored();
-		assert(room.isExplored());
+		assert(room.toString().equals(String.join(
+						   "\n", 
+						   "X, X, X, X, X, X, X, X,   ",
+						   "X, r, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, 1, 1, 1, 1, 1, 1, 1, X,",
+						   "X, X, X, X, X, X, X, X, X,")));
 	}
 	
 	
 	/**
-	 * 
+	 * 2. Il detector è posizionato inizialmente nella detector home (in alto a sinistra).
 	 */
+	@Test(timeout=3000)
+	public void detectorIsOnTopLeftCornerAtStart() {
+		WRoom wroom = PropertyUtils.getInitialState();
+		assert(wroom.toString().equals(String.join(
+						   "\n", 
+						   "X, X,",
+						   "X, r,")));
+	}
 }

@@ -1,8 +1,13 @@
 System smartcleaner
 
-Dispatch explore   : explore(X)
-Dispatch suspend   : suspend(X)
-Dispatch terminate : terminate(X)
+Dispatch explore              : explore(X)
+Dispatch suspend              : suspend(X)
+Dispatch terminate 	          : terminate(X)
+Dispatch executeStep          : executeStep(X)
+Dispatch executeRotation      : executeRotation(X)
+Dispatch doNewPlan            : doNewPlan(X)
+Dispatch emptingBox           : emptingBox(X)
+Dispatch idle 				  : idle(x)
 
 Context ctxRobot ip [ host= "localhost" port= 8018 ]  
 Context ctxWRoom ip [ host= "localhost" port= 8020 ]
@@ -10,7 +15,16 @@ Context ctxWRoom ip [ host= "localhost" port= 8020 ]
 QActor detector context ctxRobot { 
 	[" val NDB = 10
 	   var SpaceAvailable = NDB
-	   var RoomMap = null "]
+	   var RoomMap = null 
+	   val planner: itunibo.planner.Planner = null
+	   var plan = listOf<String>().iterator()
+	   var nextMove = \"\"
+	   var stepFailed = false
+	   var obstacleType = \"\"
+	   var successfullyGrabbed = false
+	   var currentState = \"\"
+	   var positionBeforeEmpting = Pair(1,1)
+	"]
 	   
 	State start initial {  
 		println("detector starts")
@@ -26,20 +40,152 @@ QActor detector context ctxRobot {
  			whenMsg terminate -> terminating
 	
 	State exploring {
-		//execute the task: Explore the room.
+		["
+			plan = planner.generatePlanForExplore().iterator()
+			currentState = \"exploring\"
+		"]
 	}
+	Goto doPlan if "plan.hasNext()" else terminating
 	
 	State emptingBox {
-		//execute the task: Empty the detectorBox.
+		["
+			SpaceAvailable = NDB
+		"]
 	}
+	Goto discoveryHome if "currentState == \"terminating\"" else returnToPositionBeforeEmpting
 	
 	State goingHome {
-		//execute the task: Go to home.
+		["
+			plan = planner.generateSafePlanForHome().iterator()
+			currentState = \"goingHome\"
+		"]
 	}
+	Goto doPlan if "plan.hasNext()" else discoveryHome
 	
 	State terminating {
-		//execute the task: Terminate the work.
+		["
+			if(SpaceAvailable != NDB){
+				plan = planner.generateSafePlanForPlasticBox().iterator()
+			} else {
+				plan = planner.generateSafePlanForHome().iterator()
+			}
+			currentState = \"terminating\"
+		"]
 	}
+	Goto doPlan if "plan.hasNext()" else selectEmptyOrGoHomeState
+	
+	State selectEmptyOrGoHomeState {
+		if "SpaceAvailable != NDB" {
+			forward detector -m emptingBox: emptingBox(x)
+		} else {
+			forward detector -m idle: idle(x)
+		}
+	}
+	Transition commandReceived2
+ 		whenMsg emptingBox -> emptingBox
+ 		whenMsg idle -> discoveryHome
+	
+	State doPlan {
+		["
+			if(plan.hasNext()) {
+				nextMove = plan.next();	
+			} else {
+				nextMove = \"\"
+			}
+		"]
+	}
+	Goto selectNextMove
+	
+	State selectNextMove {
+		if "nextMove == \"w\"" {
+			forward detector -m executeStep : executeStep(x)
+		} 
+		if "nextMove == \"a\" || nextMove == \"d\"" 
+		{
+			forward detector -m executeRotation : executeRotation(x)
+			
+		}
+		if "nextMove == \"\""
+		{
+			forward detector -m doNewPlan : doNewPlan(x)
+			
+		}		
+	}
+	Transition commandReceived
+ 		whenMsg executeStep -> executeStep
+ 		whenMsg executeRotation -> executeRotation
+ 		whenMsg doNewPlan -> doNewPlan
+	
+	State executeStep {
+		["
+			stepFailed = executeStep()
+		"]
+	}
+	Goto handleObstacle if "stepFailed" else doPlan
+	
+	
+	State executeRotation {
+		//execute command
+	}
+	Goto doPlan
+	
+	State handleObstacle {
+		["
+			obstacleMaterial = getObstacleMaterial()
+ 		"]
+	}
+	Goto grab if "obstacleType == 'bottle'" else doNewPlan
+	
+	State doNewPlan {
+		if "currentState == \"exploring\"" {
+			forward detector -m explore : explore(x)
+		} 
+		if "currentState == \"goingHome\"" 
+		{
+			forward detector -m suspend : suspend(x)
+			
+		}
+		if "currentState == \"terminating\"" 
+		{
+			forward detector -m terminate : terminate(x)
+			
+		}
+	}
+	Transition commandReceived1
+ 		whenMsg explore -> exploring
+ 		whenMsg suspend -> goingHome
+ 		whenMsg terminate -> terminating
+	
+	State grab {
+		["
+			if(SpaceAvailable > 0) {
+				grab()
+				successfullyGrabbed = true
+				SpaceAvailable --;
+			} else {
+				successfullyGrabbed = false
+			}
+		"]
+	}
+	Goto doBackStep
+
+	State doBackStep {
+		//do back step in order to prevent the grid breaking
+		["
+			if(successfullyGrabbed) {
+				positionBeforeEmpting = Pair(x, y)  // X AND Y OBTAINED FROM PLANNER 
+			}
+		"]
+	}
+	Goto doPlan if "successfullyGrabbed" else emptingBox
+	
+	State returnToPositionBeforeEmpting {
+		["
+			plan = planner.generateSafePlanForDestination(positionBeforeEmpting).iterator()
+		"]
+	}
+	Goto doPlan
+	
 }
 
 QActor roomagent context ctxWRoom { 
