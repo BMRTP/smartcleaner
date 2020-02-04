@@ -127,7 +127,7 @@ public class RoomMap implements Serializable{
 			else
 				return false;
 		} catch (IndexOutOfBoundsException e) {
-			return true;
+			return false;
 		}
 	}
 	
