@@ -96,7 +96,7 @@ sourceSets {
 
 mainClassName = 'it.unibo.ctxRobot.MainCtxRobotKt'
 
-/*
+
 
 jar {
     println("executing jar")
@@ -105,4 +105,4 @@ jar {
         attributes 'Main-Class': "$mainClassName"
     }
 }
-*/
+
