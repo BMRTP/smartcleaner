@@ -18,8 +18,8 @@ Reply   obstacletype    : obstacletype(X)
 
 Context ctxRobot ip [ host= "localhost" port= 8018 ]  
    
-CodedQActor robotadapter context ctxRobot className "itunibo.robot.robotAdapterQa"
-		
+CodedQActor robotadapter context ctxRobot className "itunibo.robot.RobotAdapterQa"
+		 
 QActor basicrobot context ctxRobot { 
 
 	State s0 initial {
@@ -87,7 +87,7 @@ QActor sonar context ctxRobot {
 	
 	State checkdistance {
 		onMsg(sonar : sonar(X)) {
-	 			if "(payloadArg(0).toDouble() <= 10)" {
+	 			if "(payloadArg(0).toDouble() <= 20)" {
 	 				println("sonar finds an obstacle... ")
 	 				emit obstacle : obstacle($payloadArg(0))
 	 			}
