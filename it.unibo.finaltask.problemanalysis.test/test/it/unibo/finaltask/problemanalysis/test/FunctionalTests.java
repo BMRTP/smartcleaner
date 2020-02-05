@@ -11,8 +11,8 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import it.unibo.finaltask.problemanalysis.test.utils.CoapUtils;
 import it.unibo.finaltask.problemanalysis.test.utils.Maps;
 import it.unibo.finaltask.problemanalysis.test.utils.QActorInterface;
+import it.unibo.finaltask.problemanalysis.test.utils.Utils;
 import itunibo.planner.model.RoomMap;
-
 
 public class FunctionalTests {
 	public static final String BASE_URL = "http://localhost:8090";
@@ -89,41 +89,36 @@ public class FunctionalTests {
 	/**
 	 * 2. Impartito il comando suspend, il robot avvii il task “Go to home”, ritornando a discoveryHome.
 	 */
-	@Test
+	@Test(timeout=180000)
 	public void detectorCanReturnHome() throws Exception {
 		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
 		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
-		Thread.sleep(10000);
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsInSubArea(1, 5, 3, 5, RoomMap.mapFromString(map)));
 		sender.sendMessage("msg(suspend, dispatch, test, detector, suspend(x), 1)");
 		sender.close();
-		Thread.sleep(15000);
 		
-		RoomMap map1 = RoomMap.mapFromString(CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap"));
-		
-		assert(map1.isRobot(1,1));
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsAtDiscoveryHome(RoomMap.mapFromString(map)));
 	}
 	
 	/**
 	 * 3. Impartito il comando terminate, il robot avvii il task “Terminate the work”, ritornando a discoveryHome con il detectorBox vuoto.
 	 */
-	@Test
+	@Test(timeout=180000)
 	public void detectorCanTerminateWork() throws Exception {
 		final int spaceAvailable = 1;
 		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
 		sender.sendMessage("msg(init, dispatch, test, detector, init("+spaceAvailable+", false), 1)");
 		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
-		Thread.sleep(30000);
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsInSubArea(2, 5, 3, 5, RoomMap.mapFromString(map)));
+		
 		sender.sendMessage("msg(terminate, dispatch, test, detector, terminate(x), 1)");
 		sender.close();
-		Thread.sleep(20000);
 		
-		final RoomMap map = RoomMap.mapFromString(CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap"));
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsAtDiscoveryHome(RoomMap.mapFromString(map)));
 		
-		assert(map.isRobot(1,1));
-		
-		final int space = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/detector/SpaceAvailable"));
-		
-		assert(space == spaceAvailable);
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", space -> Integer.parseInt(space) == spaceAvailable);
 	}
 	
 	/**
@@ -153,22 +148,14 @@ public class FunctionalTests {
 
 		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> !task.equals("exploring"));
 		
-		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
-			final RoomMap m = RoomMap.mapFromString(map);
-			Boolean cond = false;
-			for(int x = Maps.MINLASTPOS_X; x <= Maps.MAXLASTPOS_X; x++) {
-				for(int y = Maps.MINLASTPOS_Y; y <= Maps.MAXLASTPOS_Y; y++) {
-					cond |= m.isRobot(x, y);
-				}
-			}
-			return cond;
-		});
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsInSubArea(Maps.MINLASTPOS_X, Maps.MAXLASTPOS_X, Maps.MINLASTPOS_Y, Maps.MAXLASTPOS_Y, RoomMap.mapFromString(map)));
+		
 		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> task.equals("exploring"));
 	}
 	/**
 	 * 5. Il detectorBox contenga esattamente una bottiglia a seguito della raccolta da parte del robot (supponendo che non ne abbia raccolta alcuna in precedenza).
 	 */
-	@Test
+	@Test(timeout=180000)
 	public void detectorCanGrabABottle() throws Exception {
 		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
 				
@@ -177,17 +164,13 @@ public class FunctionalTests {
 		sender.sendMessage("msg(explore, dispatch, gui, detector, explore(x), 1)");
 		sender.close();
 		
-		Thread.sleep(30000);
-		
-		int sa2 = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/detector/SpaceAvailable"));
-		
-		assert(sa1 > sa2);
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", space -> Integer.parseInt(space) == sa1 - 1);
 	}
 	
 	/**
 	 * 6. Il robot sia in grado di gettare una bottiglia, che ha nel detectorBox, all’interno del plasticBox.
 	 */
-	@Test
+	@Test(timeout=180000)
 	public void detectorCanThrowABottleInsidePlasticBox() throws Exception {
 		final int detectorSpaceAvailable = 1;
 		final int plasticBoxSpaceAvailable = 1;
@@ -199,22 +182,21 @@ public class FunctionalTests {
 		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
 		sender.sendMessage("msg(init, dispatch, test, detector, init("+detectorSpaceAvailable+", false), 1)");
 		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
-		Thread.sleep(30000);
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", space -> Integer.parseInt(space) == 0);
+		
 		sender.sendMessage("msg(terminate, dispatch, test, detector, terminate(x), 1)");
 		sender.close();
-		Thread.sleep(20000);
-						
-		final int space = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/detector/SpaceAvailable"));
-		assert(space == detectorSpaceAvailable);
 		
-		final int binSpaceAvailable = Integer.parseInt(CoapUtils.getResourceValue("coap://localhost:5683/plasticbox/SpaceAvailable"));
-		assert(binSpaceAvailable == 0);
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", space -> Integer.parseInt(space) == detectorSpaceAvailable);
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/plasticbox/SpaceAvailable", plasticboxspace -> Integer.parseInt(plasticboxspace) == 0);
 	}
 	
 	/**
 	 * 7. Il robot non getti una bottiglia nel plasticBox se questo è pieno e invii un messaggio al supervisore in attesa di un comando.
 	 */
-	@Test
+	@Test(timeout=180000)
 	public void detectorSendNotificationWhenPlasticBoxIsFull() throws Exception {
 		final int detectorSpaceAvailable = 1;
 		final int plasticBoxSpaceAvailable = 0;
@@ -226,35 +208,34 @@ public class FunctionalTests {
 		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
 		sender.sendMessage("msg(init, dispatch, test, detector, init("+detectorSpaceAvailable+", false), 1)");
 		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
-		Thread.sleep(30000);
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", space -> Integer.parseInt(space) == detectorSpaceAvailable - 1);
+		
 		sender.sendMessage("msg(terminate, dispatch, test, detector, terminate(x), 1)");
 		sender.close();
-		Thread.sleep(20000);
-						
-		final boolean waitingForSupervisor = Boolean.parseBoolean(CoapUtils.getResourceValue("coap://localhost:5683/detector/waitingForSupervisor"));
-		assert(waitingForSupervisor);
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/waitingForSupervisor", waiting -> Boolean.valueOf(waiting));
 	}
 	
 	/**
 	 * 8. Il robot sospenda la propria attività a fronte della ricezione del comando suspend da parte dell’agente della stanza nel caso in cui il livello di particolato sia troppo elevato.
 	 */
-	@Test
+	@Test(timeout=180000)
 	public void roomAgentsSuspendsDetector() throws Exception {
 		QActorInterface sender = new QActorInterface("127.0.0.1", 8022);
 		QActorInterface room = new QActorInterface("127.0.0.1", 8020);
 		sender.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
-		Thread.sleep(9000);
+		
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsInSubArea(1, 5, 3, 5, RoomMap.mapFromString(map)));
+		
 		room.sendMessage("msg(set, dispatch, test, tvocadapter, set(100.0), 1)");
 		Thread.sleep(1000);
 		room.sendMessage("msg(set, dispatch, test, tvocadapter, set(0.0), 1)");
 
 		sender.close();
 		room.close();
-		Thread.sleep(10000);
 		
-		RoomMap map1 = RoomMap.mapFromString(CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap"));
-		
-		assert(map1.isRobot(1,1));
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsAtDiscoveryHome(RoomMap.mapFromString(map)));
 	}
 	
 	/**
@@ -266,16 +247,7 @@ public class FunctionalTests {
 		detector.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
 		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> !map.isEmpty());
 		
-		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
-			final RoomMap m = RoomMap.mapFromString(map);
-			Boolean cond = false;
-			for(int x = 3; x <= 5; x++) {
-				for(int y = 3; y <= 5; y++) {
-					cond |= m.isRobot(x, y);
-				}
-			}
-			return cond;
-		});
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsInSubArea(3, 5, 3, 5, RoomMap.mapFromString(map)));
 		detector.sendMessage("msg(suspend, dispatch, test, detector, suspend(x), 1)");
 		detector.close();
 		
