@@ -30,7 +30,6 @@ QActor basicrobot context ctxRobot {
 	State work{ println("basicrobot waiting for a command... ")}
 	Transition t0 
 			whenMsg cmd          -> handleCmd
-			whenEvent obstacle   -> handleObstacle
    
 	State handleCmd {    
 		onMsg( cmd : cmd(X) ){
@@ -40,11 +39,7 @@ QActor basicrobot context ctxRobot {
 	}
 	Goto work
 	
-	State handleObstacle{
-		forward robotadapter -m cmd : cmd(h)
-		println("basicrobot stops (for safety) since obstacle")
- 	}
-	Goto work
+	
 }
 
 QActor obstacleclassifier context ctxRobot {
@@ -168,8 +163,11 @@ QActor smartrobot context ctxRobot {
 	Goto work 
 
 	State stepFail{
+		forward basicrobot -m cmd : cmd(h)
+		
 		["Duration=getDuration()"]
 		replyTo step with stepfail : stepfail($Duration)
+		
    	}
 	Goto work
 	

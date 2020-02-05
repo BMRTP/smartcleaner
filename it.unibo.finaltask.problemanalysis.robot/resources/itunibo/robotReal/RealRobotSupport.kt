@@ -15,7 +15,7 @@ class RealRobotSupport(port: String) : RobotSupport {
 	init {
 		try {
 			val serialConn = JSSCSerialComm(null)
-			conn = serialConn.connect(port)
+			conn = serialConn.connect(port.trim('\''))
 			println("RealRobotSupport connected at $port")
 		} catch (e: Exception) {
 			println("RealRobotSupport connection error: $e");

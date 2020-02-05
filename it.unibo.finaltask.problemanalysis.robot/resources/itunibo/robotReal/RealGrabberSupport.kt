@@ -14,7 +14,8 @@ class RealGrabberSupport : GrabberSupport, ClassifierSupport {
 	}
 
 	override fun classify(): String {
-		print("Insert the obstacle type: ")
-		return readLine() ?: "Unknown"
+		//print("Insert the obstacle type: ")
+		//return readLine() ?: "Unknown"
+		return "wall"
 	}
 }
