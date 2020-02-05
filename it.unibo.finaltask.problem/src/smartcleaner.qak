@@ -1,16 +1,46 @@
 System smartcleaner
 
-Dispatch explore   : explore(X)
-Dispatch suspend   : suspend(X)
-Dispatch terminate : terminate(X)
+Dispatch explore              : explore(X)
+Dispatch suspend              : suspend(X)
+Dispatch terminate 	          : terminate(X)
+Dispatch empty 	          	  : empty(X)
+Dispatch executeStep          : executeStep(X)
+Dispatch executeRotation      : executeRotation(X)
+Dispatch doNewPlan            : doNewPlan(X)
+Dispatch emptingBox           : emptingBox(X)
+Dispatch idle 				  : idle(x)
+Dispatch continue  			  : continue(X)
+
+Event tvocvalue : tvocvalue(VALUE)
+
+Dispatch empty : empty(X)
+Request throwaway : throwaway(QUANTITY)
+Reply   throwed : throwed(QUANTITY)
 
 Context ctxRobot ip [ host= "localhost" port= 8018 ]  
 Context ctxWRoom ip [ host= "localhost" port= 8020 ]
 
 QActor detector context ctxRobot { 
-	[" val NDB = 10
+	[" 
+       val resource = itunibo.resource.CoapResourceSupport(name, \"coap://localhost:5683\")
+	   val NDB = 10
 	   var SpaceAvailable = NDB
-	   var RoomMap = null "]
+	   resource.createProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+	   var RoomMap = \"\" 
+	   resource.createProperty(\"RoomMap\", RoomMap)
+	   val planner = itunibo.planner.DummyPlanner()
+	   val support = itunibo.support.DummySupport()
+	   var plan = listOf<String>().iterator()
+	   var nextMove = \"\"
+	   var stepFailed = false
+	   var obstacleType = \"\"
+	   var successfullyGrabbed = false
+	   var currentState = \"\"
+	   var positionBeforeEmpting = Pair(1,1)
+	   var waitingForSupervisor = false
+	   var plasticBoxFull = false
+	   var WaitCommandTime = 5L
+	"]
 	   
 	State start initial {  
 		println("detector starts")
@@ -26,52 +56,297 @@ QActor detector context ctxRobot {
  			whenMsg terminate -> terminating
 	
 	State exploring {
-		//execute the task: Explore the room.
+		["
+			plan = planner.generatePlanForExplore().iterator()
+			currentState = \"exploring\"
+		"]
 	}
+	Goto doPlan if "plan.hasNext()" else terminating
 	
 	State emptingBox {
-		//execute the task: Empty the detectorBox.
+		["
+			waitingForSupervisor = false
+			val Quantity = NDB - SpaceAvailable
+		"]
+		request plasticbox -m throwaway : throwaway($Quantity)
 	}
+	Transition t4
+		whenReply throwed -> throwedBottles
+		
+	State throwedBottles {
+		println("STATE: throwedBottles")
+		onMsg(throwed : throwed(QUANTITY)) {
+			["plasticBoxFull = (payloadArg(0).toInt() == 0)
+			  if (plasticBoxFull) {
+				waitingForSupervisor = true
+			  } else {
+				   SpaceAvailable += payloadArg(0).toInt()
+				   resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+			  } "]
+		}
+	}
+	Goto waitForSupervisorCommand if "(waitingForSupervisor)" else chooseDestination
 	
-	State goingHome {
-		//execute the task: Go to home.
+	State chooseDestination {
+		println("STATE: chooseDestination")
+	} Goto discoveryHome if "(currentState == \"terminating\")" else returnToPositionBeforeEmpting
+	
+	State waitForSupervisorCommand {
+		println("STATE: waitForSupervisorCommand")
+		println("waiting for a command from supervisor...")
 	}
+	Transition t5
+ 		whenMsg continue -> emptingBox
+
+	State goingHome {
+		["
+			plan = planner.generateSafePlanForHome().iterator()
+			currentState = \"goingHome\"
+		"]
+	}
+	Goto doPlan if "plan.hasNext()" else discoveryHome
 	
 	State terminating {
-		//execute the task: Terminate the work.
+		["
+			if(SpaceAvailable != NDB){
+				plan = planner.generateSafePlanForPlasticBox().iterator()
+			} else {
+				plan = planner.generateSafePlanForHome().iterator()
+			}
+			currentState = \"terminating\"
+		"]
 	}
+	Goto doPlan if "plan.hasNext()" else selectEmptyOrGoHomeState
+	
+	State selectEmptyOrGoHomeState {
+		if "SpaceAvailable != NDB" {
+			forward detector -m emptingBox: emptingBox(x)
+		} else {
+			forward detector -m idle: idle(x)
+		}
+	}
+	Transition commandReceived2
+ 		whenMsg emptingBox -> emptingBox
+ 		whenMsg idle -> discoveryHome
+	
+	State doPlan {
+		["
+			if(plan.hasNext()) {
+				nextMove = plan.next();	
+			} else {
+				nextMove = \"\"
+			}
+		"]
+	}
+	Goto selectNextMove if "(nextMove != \"\")" else doNewPlan
+	
+	State selectNextMove {
+		if "nextMove == \"w\"" {
+			forward detector -m executeStep : executeStep(x)
+		} 
+		if "nextMove == \"a\" || nextMove == \"d\"" 
+		{
+			forward detector -m executeRotation : executeRotation(nextMove)
+			
+		}	
+	}
+	Transition commandReceived
+ 		whenMsg executeStep -> executeStep
+ 		whenMsg executeRotation -> executeRotation
+ 		
+ 	State executeStep{
+		["startTimer()"]
+	} Transition a
+		whenTimeVar WaitCommandTime  -> doStep
+		whenMsg explore -> exploring
+ 		whenMsg suspend -> goingHome
+ 		whenMsg terminate -> terminating
+	
+	State doStep {
+		["
+			stepFailed = support.executeStep()
+			if(!stepFailed) {
+				planner.stepDone();
+				RoomMap = planner.getStringMap()
+		   		resource.setProperty(\"RoomMap\", RoomMap)
+			}
+		"]
+	}
+	Goto handleObstacle if "stepFailed" else doPlan
+	
+	
+	State executeRotation {
+		onMsg (executeRotation : executeRotation(NEXTMOVE)) {
+			if "(payloadArg(0) == \"d\")" {
+				run support.executeLeftRotation()
+				run planner.rotationLeftDone()
+			} else {
+				run support.executeRightRotation()
+				run planner.rotationRightDone()	
+			}
+			
+		}
+	}
+	Goto doPlan
+	
+	State handleObstacle {
+		["
+			obstacleType = support.getObstacleMaterial()
+			if(obstacleType != \"bottle\") {
+				planner.setObstacle(planner.getRobotAheadPosition())
+			}
+			RoomMap = planner.getStringMap()
+		   	resource.setProperty(\"RoomMap\", RoomMap)
+
+ 		"]
+	}
+	Goto doBackStep
+	
+	State doNewPlan {
+		if "currentState == \"exploring\"" {
+			forward detector -m explore : explore(x)
+		} 
+		if "currentState == \"goingHome\"" 
+		{
+			forward detector -m suspend : suspend(x)
+			
+		}
+		if "currentState == \"terminating\"" 
+		{
+			forward detector -m terminate : terminate(x)
+			
+		}
+	}
+	Transition commandReceived1
+ 		whenMsg explore -> exploring
+ 		whenMsg suspend -> goingHome
+ 		whenMsg terminate -> terminating
+ 		whenMsg empty -> emptingBox
+	
+	State grab {
+		["
+			if(SpaceAvailable > 0) {
+				support.grab()
+				successfullyGrabbed = true
+				SpaceAvailable --;
+				resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+			} else {
+				successfullyGrabbed = false
+				positionBeforeEmpting = planner.getRobotAheadPosition()
+			}
+		"]
+	}
+	Goto doPlan if "successfullyGrabbed" else goToPlasticBox
+	
+	State goToPlasticBox {
+		["
+			plan = planner.generateSafePlanForPlasticBox().iterator();
+		"]
+		
+	}
+	Goto doPlanForEmpting
+	
+	State doPlanForEmpting {
+		["
+			if(plan.hasNext()) {
+				nextMove = plan.next();	
+			} else {
+				nextMove = \"\"
+			}
+		"]
+	}
+	Goto selectNextMove if "(nextMove != \"\")" else emptingBox
+
+	State doBackStep {
+		run support.executeBackStep()
+	}
+	Goto grab if "(obstacleType == \"bottle\")" else doNewPlan
+	
+	State returnToPositionBeforeEmpting {
+		["
+			plan = planner.generateSafePlanForDestination(positionBeforeEmpting).iterator()
+		"]
+	}
+	Goto doPlan
+	
 }
 
 QActor roomagent context ctxWRoom { 
-	[" val TVOCHighThreshold = 200 "]
+	[" val TVOCHighThreshold = 200.0
+	   var value = 0.0
+	"]
 	
-	State start initial {  
+	State s0 initial {  
 		println("roomagent starts")
 	}
-	Goto notallerted
+	Goto notalerted
 	
-	State notallerted {
+	State notalerted {}
+	Transition t1
+		whenEvent tvocvalue -> checkalerting
+		
+	State checkalerting {
+		onMsg( tvocvalue : tvocvalue(VALUE) ){
+			["value = payloadArg(0).toDouble()"]
+		}
 	}
+	Goto alerting if "(value > TVOCHighThreshold)" else notalerted
 	
-	State allerting {
+	State alerting {
+		println("roomagent alerted, suspending detector")
 		forward detector -m suspend: suspend(true)
 	}
-	Goto allerted
+	Goto alerted
 	
-	State allerted {
+	State alerted {} 
+	Transition t2
+		whenEvent tvocvalue -> checknotalerting
+	
+	State checknotalerting {
+		onMsg( tvocvalue : tvocvalue(VALUE) ){
+			["value = payloadArg(0).toDouble()"]
+		}
 	}
+	Goto notalerted if "(value <= TVOCHighThreshold)" else alerted
 }
 
-QActor plasticbox context ctxWRoom { 
-	[" val NPB = 10
-	   var SpaceAvailable = NPB "]
-	   
-	State start initial {  
+QActor plasticbox context ctxWRoom {
+	[" var NPB = 10
+	   var SpaceAvailable = NPB 
+	   val resource = itunibo.resource.CoapResourceSupport(name, \"coap://localhost:5683\")
+	   resource.createProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+	"]
+	
+	State s0 initial {
 		println("plasticbox starts")
 	}
 	Goto ready
+		
+	State ready { }
+	Transition t1
+		whenMsg empty -> reset
+		whenRequest throwaway -> set
 	
-	State ready {
-		//update remaining space and make it available
+	State reset {
+		println("plasticbox is now empty")
+		[" SpaceAvailable = NPB 
+		   resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+		 "]
 	}
+	Goto ready
+	
+	State set {
+		onMsg(throwaway : throwaway(QUANTITY)){
+			println("plasticbox receives ${payloadArg(0)} bottles")
+			if "(SpaceAvailable >= payloadArg(0).toInt())" {
+				[" SpaceAvailable -= payloadArg(0).toInt() 
+				   resource.setProperty(\"SpaceAvailable\", SpaceAvailable.toString())
+				"]
+				replyTo throwaway with throwed : throwed($payloadArg(0))
+			} else {
+				replyTo throwaway with throwed : throwed(0)
+			}
+		}
+	}
+	Goto ready
 }
