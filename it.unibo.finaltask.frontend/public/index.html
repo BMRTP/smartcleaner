@@ -52,7 +52,6 @@
       </div>
    </body>
 
-
    <script>
       var server = io()
       drawing = new Image();
@@ -123,8 +122,8 @@
       });
    
       function drawOnCanvas(mapString) {
-         let squareDim = 25;
          var canvas = document.getElementById('myCanvas');
+         let squareDim = canvas.height / (Math.max(1,Math.min(25, mapString.trim().split('\n').length)));
          if (canvas.getContext) {
             var ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -133,27 +132,28 @@
             ctx.strokeStyle = "#1fa3ec";
             let c = 0;
             let r = 0;
-            for (var i = 1; i <= mapString.length; i++) {
-               if (mapString.charAt(i) === '\n') {
-                  c++;
-                  r = 0;
-               } else if(mapString.charAt(i) === 'X' || mapString.charAt(i) === '1' || mapString.charAt(i) === '0' || mapString.charAt(i) === 'r') {
-                  if (mapString.charAt(i) === '1') {
-                     ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
-                  } else if (mapString.charAt(i) === '0') {
-                     ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
-                     ctx.moveTo(squareDim * r, squareDim * c);
-                     ctx.lineTo(squareDim * r + squareDim, squareDim * c + squareDim);
-                     ctx.moveTo(squareDim * r, squareDim * c + squareDim);
-                     ctx.lineTo(squareDim * r + squareDim, squareDim * c);
-                     ctx.stroke();
-                  } else if(mapString.charAt(i) === 'X'){
-                     ctx.fillRect(squareDim * r, squareDim * c, squareDim, squareDim);
-                  } else {
-                     ctx.drawImage(drawing, squareDim * r, squareDim * c, squareDim, squareDim)
+            mapString = mapString.trim()
+               for (var i = 0; i <= mapString.length; i++) {
+                  if (mapString.charAt(i) === '\n') {
+                     c++;
+                     r = 0;
+                  } else if(mapString.charAt(i) === 'X' || mapString.charAt(i) === '1' || mapString.charAt(i) === '0' || mapString.charAt(i) === 'r') {
+                     if (mapString.charAt(i) === '1') {
+                        ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                     } else if (mapString.charAt(i) === '0') {
+                        ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                        ctx.moveTo(squareDim * r, squareDim * c);
+                        ctx.lineTo(squareDim * r + squareDim, squareDim * c + squareDim);
+                        ctx.moveTo(squareDim * r, squareDim * c + squareDim);
+                        ctx.lineTo(squareDim * r + squareDim, squareDim * c);
+                        ctx.stroke();
+                     } else if(mapString.charAt(i) === 'X'){
+                        ctx.fillRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                     } else {
+                        ctx.drawImage(drawing, squareDim * r, squareDim * c, squareDim, squareDim)
+                     }
+                     r++;
                   }
-                  r++;
-               }
             }
          }
       }
