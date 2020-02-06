@@ -251,14 +251,14 @@ public class FunctionalTests {
 		detector.sendMessage("msg(suspend, dispatch, test, detector, suspend(x), 1)");
 		detector.close();
 		
-		final String finalMap = CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap");
-		final int discovered = (int) finalMap.chars().filter(c -> c == '1').count();
+		final String initialMap = CoapUtils.getResourceValue("coap://localhost:5683/detector/RoomMap");
+		final int discovered = (int) initialMap.chars().filter(c -> c == '1').count();
 		
-		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
-			int cells = (int) map.chars().filter(c -> c == '1').count();
-			assert(cells == discovered);
-			return RoomMap.mapFromString(map).isRobot(1, 1);
-		});
+		String finalMap = CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> RoomMap.mapFromString(map).isRobot(1, 1));
+		
+		int cells = (int) finalMap.chars().filter(c -> c == '1').count();
+		assert(cells == discovered);
+
 	}
 	
 	@SuppressWarnings("deprecation")

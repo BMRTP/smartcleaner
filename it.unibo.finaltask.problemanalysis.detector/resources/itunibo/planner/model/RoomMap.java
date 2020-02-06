@@ -133,12 +133,12 @@ public class RoomMap implements Serializable{
 		try {
 			Box box = roomMap.get(y-1).get(x);
 			if  (box == null)
-				return true;
+				return false;
 			if (box.isObstacle())
 				return false;
 			return true;
 		} catch (IndexOutOfBoundsException e) {
-			return true;
+			return false;
 		}
 	}
 	
@@ -146,12 +146,12 @@ public class RoomMap implements Serializable{
 		try {
 			Box box = roomMap.get(y).get(x+1);
 			if  (box == null)
-				return true;
+				return false;
 			if (box.isObstacle())
 				return false;
 			return true;
 		} catch (IndexOutOfBoundsException e) {
-			return true;
+			return false;
 		}
 	}
 
@@ -159,12 +159,12 @@ public class RoomMap implements Serializable{
 		try {
 			Box box = roomMap.get(y+1).get(x);
 			if  (box == null)
-				return true;
+				return false;
 			if (box.isObstacle())
 				return false;
 			return true;
 		} catch (IndexOutOfBoundsException e) {
-			return true;
+			return false;
 		}
 	}
 	
@@ -174,12 +174,12 @@ public class RoomMap implements Serializable{
 		try {
 			Box box = roomMap.get(y).get(x-1);
 			if  (box == null)
-				return true;
+				return false;
 			if (box.isObstacle())
 				return false;
 			return true;
 		} catch (IndexOutOfBoundsException e) {
-			return true;
+			return false;
 		}
 	}
 	
