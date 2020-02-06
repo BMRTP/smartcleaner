@@ -25,7 +25,7 @@ QActor basicrobot context ctxRobot {
 	State s0 initial {
 		println("basicrobot starts")
 	}
-	Goto work    
+	Goto work
 	
 	State work{ println("basicrobot waiting for a command... ")}
 	Transition t0 

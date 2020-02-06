@@ -1,15 +1,28 @@
-const client = require('./qakClient')
+const net = require('net');
 
-const socket = client.createSocket()
+const HOST = "localhost"
+const PORT = 8016
 
-exports.init = () => {
-    return client.start(socket, 8016, "localhost") 
+let socket
+
+function connect() {
+    socket = new net.Socket();
+    socket.connect(PORT, HOST, function() {
+        console.log('Connected to plasticBox: ' + HOST + ':' + PORT);
+    });
+
+    socket.on('error', function() {}); // need this line so it wont throw exception
+
+    socket.on('close', function() {
+        connect();
+    });
 }
+exports.connect = connect
 
 exports.empty = () => {
-    return client.sendMessage(socket, "msg(empty, dispatch, gui, plasticbox, empty(x), 1)")
+    socket.write("msg(empty, dispatch, gui, plasticbox, empty(x), 1)\n")
 }
 
 exports.close = () => {
-    client.close(socket)
+    socket.close()
 }

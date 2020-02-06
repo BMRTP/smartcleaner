@@ -9,8 +9,9 @@ const io = require('socket.io')(server);
 var clients = []
 var updates = new Map()
 
-detector.init().then((res) => console.log("Connected to detector"))
-plasticbox.init().then((res) => console.log("Connected to plasticbox"))
+
+detector.connect()
+plasticbox.connect()
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/public/index.html');
@@ -52,15 +53,20 @@ io.on('connection', function (socket) {
 })
 
 
+setInterval(observeProperties, 2000);
 
-coapClient.observeProperty("detector/RoomMap", coapUpdatesHandler)
-coapClient.observeProperty("detector/SpaceAvailable", coapUpdatesHandler)
-coapClient.observeProperty("detector/currentTask", coapUpdatesHandler)
-coapClient.observeProperty("detector/waitingForSupervisor", coapUpdatesHandler)
-coapClient.observeProperty("plasticbox/SpaceAvailable", coapUpdatesHandler)
+function observeProperties() {
+    coapClient.observeProperty("detector/RoomMap", coapUpdatesHandler)
+    coapClient.observeProperty("detector/SpaceAvailable", coapUpdatesHandler)
+    coapClient.observeProperty("detector/currentTask", coapUpdatesHandler)
+    coapClient.observeProperty("detector/waitingForSupervisor", coapUpdatesHandler)
+    coapClient.observeProperty("plasticbox/SpaceAvailable", coapUpdatesHandler)
+}
+
+observeProperties()
 
 function coapUpdatesHandler(resource, value) {
-    console.log("Resource: " + resource + " value: " + value)
+    //console.log("Resource: " + resource + " value: " + value)
     updates.set(resource, value)
     clients.forEach(c => c.emit('update', { resource: resource, value: value}))
 }
