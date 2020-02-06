@@ -26,18 +26,32 @@ class RealRobotSupport(port: String) : RobotSupport {
 	override fun move(cmd: String) {
 		println("RealRobotSupport handling move $cmd")
 		when (cmd) {
-			"cmd(w)", "w" -> conn.sendALine("w")
-			"cmd(s)", "s" -> conn.sendALine("s")
-			"cmd(a)", "a" -> conn.sendALine("a")
-			"cmd(d)", "d" -> conn.sendALine("d")
-			"cmd(h)", "h" -> conn.sendALine("h")
+			"w" -> conn.sendALine("w")
+			"s" -> conn.sendALine("s")
+			"a" -> conn.sendALine("a")
+			"d" -> conn.sendALine("d")
+			"h" -> conn.sendALine("h")
 
 
-			"cmd(j)", "j" -> conn.sendALine("j") //set the current angle value as a full rotation angle value
-			"cmd(k)", "k" -> conn.sendALine("k") //reset angle
-			//"cmd(p)", "p" -> conn.sendALine("p") //set power, NEED A VALUE
+			"j" -> conn.sendALine("j") //set the current angle value as a full rotation angle value
+			"k" -> conn.sendALine("k") //reset angle
 
-			else -> println("RealRobotSupport command $cmd unsupported")
+
+			else -> {
+				if (cmd.length > 0 && cmd[0] == 'r') { //rotation power
+					val power = cmd.trim('r').toIntOrNull()
+					if(power != null) {
+						conn.sendALine("r" + power)
+					}
+				} else if (cmd.length > 0 && cmd[0] == 'f') { //forward power
+					val power = cmd.trim('f').toIntOrNull()
+					if(power != null) {
+						conn.sendALine("f" + power)
+					}
+				} else {
+					println("RealRobotSupport command $cmd unsupported")
+				}
+			}
 		}
 
 	}

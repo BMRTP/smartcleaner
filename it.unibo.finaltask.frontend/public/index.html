@@ -3,18 +3,27 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
       <title>Smartcleaner</title>
+      <script src="https://use.fontawesome.com/releases/v5.12.1/js/all.js"></script>
       <style>div,fieldset,input,select{padding:5px;font-size:1em;}fieldset{background:#f2f2f2;}p{margin:0.5em 0;}input{width:100%;box-sizing:border-box;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;background:#ffffff;color:#000000;}input[type=checkbox],input[type=radio]{width:1em;margin-right:6px;vertical-align:-1px;}select{width:100%;background:#ffffff;color:#000000;}textarea{resize:none;width:98%;height:318px;padding:5px;overflow:auto;background:#ffffff;color:#000000;}body{text-align:center;font-family:verdana,sans-serif;background:#ffffff;}td{padding:0px;}button{border:0;border-radius:0.3rem;background:#1fa3ec;color:#ffffff;line-height:2.4rem;font-size:1.2rem;width:100%;-webkit-transition-duration:0.4s;transition-duration:0.4s;cursor:pointer;}button:hover{background:#0e70a4;}.bred{background:#d43535;}.bred:hover{background:#931f1f;}.bgrn{background:#47c266;}.bgrn:hover{background:#5aaf6f;}a{text-decoration:none;}.p{float:left;text-align:left;}.q{float:right;text-align:right;}</style>
+      <link rel="stylesheet" type="text/css" href="style.css">
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+     
    </head>
    <body>
-      <div style="text-align:left;display:inline-block;color:#000000;min-width:340px;">
+      <div id="mainContainer">
          <div style="text-align:center;">
             <h3>Smartcleaner</h3>
          </div>
-         <div style="text-align:center;">
-            <h4>Map</h4>
-            <!--<p id="map" style="height: 100px; font-family: monospace; display: inline-block; text-align:left;"> </p>-->
+         <div id="mapSection">
+            <div style="display: flex; flex-direction: row;">
+               <h4 style="text-align:center; margin:0">Map</h4> &nbsp  &nbsp
+               <label class="switch">
+                  <input type="checkbox" id="mapCheckbox">
+                  <span class="slider round"></span>
+               </label>
+            </div>
+            <div id="mapContainer" style="display:none"></div>
             <canvas id="myCanvas"></canvas>
          </div>
          <div style="text-align:center;">
@@ -23,126 +32,158 @@
             <p id="currenttask"> </p>
             <p id="waitingsupervisor"> </p>
          </div>
-         <p></p>
-         <button name="" id="explore">Explore</button>
-         <p></p>
-         <p></p>
-         <button name="" id="suspend">Suspend</button>
-         <p></p>
-         <p></p>
-         <button name="" id="terminate">Terminate</button>
-         <p></p>
-         <p></p>
-         <button name="" id="continue">Continue</button>
-         <p></p>
-         <p></p>
-         <div style="text-align:center;">
+         <div id="buttonContainer">
+            <button name="" id="explore">Explore</button>
+            <button name="" id="suspend">Suspend</button>
+            <button name="" id="terminate">Terminate</button>
+            <button name="" id="continue">Continue</button>
+         </div>
+         <div>
             <h4>PlasticBox</h4>
             <p id="plasticboxspace"> </p>
          </div>
-         <button name="" id="empty">Empty</button>
-
+         <div>
+            <button name="" id="empty">Empty</button>
+         </div>
          <div style="text-align:right;font-size:11px;">
             <hr>
             <a href="#" target="_blank" style="color:#aaa;">Smartcleaner by </a>
          </div>
       </div>
    </body>
+
    <script>
-   var server = io()
-   drawing = new Image();
-   drawing.src = "https://cdn.iconscout.com/icon/premium/png-256-thumb/vacuum-1671324-1418626.png"
-   server.on('update', function (payload) {
-      //{ resource: resource, value: value}
-      switch (payload.resource) {
-         case 'detector/RoomMap':
-            $("#map").html(payload.value.replace(/\n/g, "<br />"));
-            let map = payload.value;
-            draw(map)
-            break
-         case 'detector/SpaceAvailable':
-            $("#detectorspace").html("Space Available: " + payload.value);
-            break
-         case 'detector/currentTask':
-            $("#currenttask").html("Robot is: " + payload.value);
-            break
-         case 'detector/waitingForSupervisor':
-            if (payload.value === "true") {
-               $("#waitingsupervisor").html("Robot is waiting for supervisor");
-               $("#continue").show();
-               $("#explore").hide();
-               $("#suspend").hide();
-               $("#terminate").hide();
-            } else {
-               $("#waitingsupervisor").html("");
-               $("#continue").hide();
-               $("#explore").show();
-               $("#suspend").show();
-               $("#terminate").show();
-            }
-            break
-         case 'plasticbox/SpaceAvailable':
-            $("#plasticboxspace").html("Space Available: " + payload.value);
-            break
-      }
-   });
-
-
-   $("#explore").click(function () {
-      console.log("explore");
-      server.emit('command', { name: 'explore' })
-   });
-   $("#suspend").click(function () {
-      console.log("suspend");
-      server.emit('command', { name: 'suspend' })
-   });
-   $("#terminate").click(function () {
-      console.log("terminate");
-      server.emit('command', { name: 'terminate' })
-   });
-   $("#continue").click(function () {
-      console.log("continue");
-      server.emit('command', { name: 'continue' })
-   });
-   $("#empty").click(function () {
-      console.log("empty");
-      server.emit('command', { name: 'empty' })
-   });
-   function draw(mapString) {
-      let squareDim = 25;
-      var canvas = document.getElementById('myCanvas');
-      if (canvas.getContext) {
-         var ctx = canvas.getContext('2d');
-         ctx.clearRect(0, 0, canvas.width, canvas.height);
-         ctx.beginPath();
-         ctx.fillStyle = "#0e70a4";
-         ctx.strokeStyle = "#1fa3ec";
-         let c = 0;
-         let r = 0;
-         for (var i = 1; i <= mapString.length; i++) {
-            if (mapString.charAt(i) === '\n') {
-               c++;
-               r = 0;
-            } else if(mapString.charAt(i) === 'X' || mapString.charAt(i) === '1' || mapString.charAt(i) === '0' || mapString.charAt(i) === 'r') {
-               if (mapString.charAt(i) === '1') {
-                  ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
-               } else if (mapString.charAt(i) === '0') {
-                  ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
-                  ctx.moveTo(squareDim * r, squareDim * c);
-                  ctx.lineTo(squareDim * r + squareDim, squareDim * c + squareDim);
-                  ctx.moveTo(squareDim * r, squareDim * c + squareDim);
-                  ctx.lineTo(squareDim * r + squareDim, squareDim * c);
-                  ctx.stroke();
-               } else if(mapString.charAt(i) === 'X'){
-                  ctx.fillRect(squareDim * r, squareDim * c, squareDim, squareDim);
+      var server = io()
+      drawing = new Image();
+      drawing.src = "https://cdn.iconscout.com/icon/premium/png-256-thumb/vacuum-1671324-1418626.png"
+      
+      $("#mapCheckbox").change(function() { 
+         $("#myCanvas").toggle()
+         $("#mapContainer").toggle()
+      });
+   
+      server.on('update', function (payload) {
+         //{ resource: resource, value: value}
+         switch (payload.resource) {
+            case 'detector/RoomMap':
+               $("#map").html(payload.value.replace(/\n/g, "<br />"))
+               let map = payload.value
+               console.log(map)
+               drawOnFlex(map)
+               drawOnCanvas(map)
+               break
+            case 'detector/SpaceAvailable':
+               $("#detectorspace").html("Space Available: " + payload.value);
+               break
+            case 'detector/currentTask':
+               $("#currenttask").html("Robot is: " + payload.value);
+               break
+            case 'detector/waitingForSupervisor':
+               if (payload.value === "true") {
+                  $("#waitingsupervisor").html("Robot is waiting for supervisor");
+                  $("#continue").show();
+                  $("#explore").hide();
+                  $("#suspend").hide();
+                  $("#terminate").hide();
                } else {
-                  ctx.drawImage(drawing, squareDim * r, squareDim * c, squareDim, squareDim)
+                  $("#waitingsupervisor").html("");
+                  $("#continue").hide();
+                  $("#explore").show();
+                  $("#suspend").show();
+                  $("#terminate").show();
                }
-               r++;
+               break
+            case 'plasticbox/SpaceAvailable':
+               $("#plasticboxspace").html("Space Available: " + payload.value);
+               break
+         }
+      });
+
+
+      $("#explore").click(function () {
+         console.log("explore");
+         server.emit('command', { name: 'explore' })
+      });
+      $("#suspend").click(function () {
+         console.log("suspend");
+         server.emit('command', { name: 'suspend' })
+      });
+      $("#terminate").click(function () {
+         console.log("terminate");
+         server.emit('command', { name: 'terminate' })
+      });
+      $("#continue").click(function () {
+         console.log("continue");
+         server.emit('command', { name: 'continue' })
+      });
+      $("#empty").click(function () {
+         console.log("empty");
+         server.emit('command', { name: 'empty' })
+      });
+   
+      function drawOnCanvas(mapString) {
+         var canvas = document.getElementById('myCanvas');
+         let squareDim = canvas.height / (Math.max(1,Math.min(25, mapString.trim().split('\n').length)));
+         if (canvas.getContext) {
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.fillStyle = "#0e70a4";
+            ctx.strokeStyle = "#1fa3ec";
+            let c = 0;
+            let r = 0;
+            mapString = mapString.trim()
+               for (var i = 0; i <= mapString.length; i++) {
+                  if (mapString.charAt(i) === '\n') {
+                     c++;
+                     r = 0;
+                  } else if(mapString.charAt(i) === 'X' || mapString.charAt(i) === '1' || mapString.charAt(i) === '0' || mapString.charAt(i) === 'r') {
+                     if (mapString.charAt(i) === '1') {
+                        ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                     } else if (mapString.charAt(i) === '0') {
+                        ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                        ctx.moveTo(squareDim * r, squareDim * c);
+                        ctx.lineTo(squareDim * r + squareDim, squareDim * c + squareDim);
+                        ctx.moveTo(squareDim * r, squareDim * c + squareDim);
+                        ctx.lineTo(squareDim * r + squareDim, squareDim * c);
+                        ctx.stroke();
+                     } else if(mapString.charAt(i) === 'X'){
+                        ctx.fillRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                     } else {
+                        ctx.drawImage(drawing, squareDim * r, squareDim * c, squareDim, squareDim)
+                     }
+                     r++;
+                  }
             }
          }
       }
-   }
-</script>
 
+      function drawOnFlex(map) {
+            map = Array.from(map)
+            
+            var newMap = "<div class='mapRow'>"
+            
+            for(var i = 0; i < map.length; i++ ) {
+               if(map[i] === 'X') {
+                  newMap += '<div class="item"><i class="fas fa-2x fa-times"></i></div>'
+               } else if (map[i] === '1') {
+                  newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+               } else if (map[i] === '0') {
+                  newMap += '<div class="item"><i class="fas fa-2x fa-question"></i></div>'
+               } else if (map[i] === 'r') {
+                  newMap += '<div class="item"><i class="fab fa-2x fa-reddit-alien"></i></div>'
+               } else if (map[i] === ',' || map[i] === '|' || map[i] === ' ') {
+                  //ignore
+               } else if (map[i] === '\n') { 
+                  if(i == map.length)
+                     newMap += '</div>'
+                  else 
+                     newMap += '</div><div class="mapRow">'
+               } else {
+                  newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+               }
+            }
+            $("#mapContainer").html(newMap);
+         }
+   </script>
 </html>

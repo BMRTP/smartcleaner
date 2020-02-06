@@ -1,7 +1,8 @@
 const detector = require('./supports/detectorClient')
 const plasticbox = require('./supports/plasticboxClient')
 const coapClient = require('./supports/coap')
-const app = require('express')();
+const express = require('express')
+const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 
@@ -13,6 +14,9 @@ var updates = new Map()
 detector.connect()
 plasticbox.connect()
 
+app.get('/style.css', function (req, res) {
+    res.sendFile(__dirname + '/public/style.css');
+})
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/public/index.html');
 })

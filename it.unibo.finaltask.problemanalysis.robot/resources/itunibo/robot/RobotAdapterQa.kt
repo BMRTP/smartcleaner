@@ -39,12 +39,12 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 					"real" -> {
 						robotSupport = RealRobotSupport(port)
 						//sonarSupport = RealSonarSupport()
-						sonarSupport = object:SonarSupport {
+						sonarSupport = object:SonarSupport { //th sonar should be run externally
 							override fun observe(distanceHandler: (Double) -> Unit) {
 								//nothing
 							}
 						}
-						val grabber = RealGrabberSupport()
+						val grabber = ConsoleGrabberSupport()
 						classifierSupport = grabber
 						grabberSupport = grabber
 					}
