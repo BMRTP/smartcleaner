@@ -3,18 +3,21 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
       <title>Smartcleaner</title>
+      <script src="https://use.fontawesome.com/releases/v5.12.1/js/all.js"></script>
       <style>div,fieldset,input,select{padding:5px;font-size:1em;}fieldset{background:#f2f2f2;}p{margin:0.5em 0;}input{width:100%;box-sizing:border-box;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;background:#ffffff;color:#000000;}input[type=checkbox],input[type=radio]{width:1em;margin-right:6px;vertical-align:-1px;}select{width:100%;background:#ffffff;color:#000000;}textarea{resize:none;width:98%;height:318px;padding:5px;overflow:auto;background:#ffffff;color:#000000;}body{text-align:center;font-family:verdana,sans-serif;background:#ffffff;}td{padding:0px;}button{border:0;border-radius:0.3rem;background:#1fa3ec;color:#ffffff;line-height:2.4rem;font-size:1.2rem;width:100%;-webkit-transition-duration:0.4s;transition-duration:0.4s;cursor:pointer;}button:hover{background:#0e70a4;}.bred{background:#d43535;}.bred:hover{background:#931f1f;}.bgrn{background:#47c266;}.bgrn:hover{background:#5aaf6f;}a{text-decoration:none;}.p{float:left;text-align:left;}.q{float:right;text-align:right;}</style>
+      <link rel="stylesheet" type="text/css" href="style.css">
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+     
    </head>
    <body>
-      <div style="text-align:left;display:inline-block;color:#000000;min-width:340px;">
+      <div id="mainContainer">
          <div style="text-align:center;">
             <h3>Smartcleaner</h3>
          </div>
-         <div style="text-align:center;">
+         <div id="mapSection" style="text-align:center;">
             <h4>Map</h4>
-            <p id="map" style="height: 100px; font-family: monospace;"> </p>
+            <div id="mapContainer"></div>
          </div>
          <div style="text-align:center;">
             <h4>Detector</h4>
@@ -22,31 +25,27 @@
             <p id="currenttask"> </p>
             <p id="waitingsupervisor"> </p>
          </div>
-         <p></p>
-         <button name="" id="explore">Explore</button>
-         <p></p>
-         <p></p>
-         <button name="" id="suspend">Suspend</button>
-         <p></p>
-         <p></p>
-         <button name="" id="terminate">Terminate</button>
-         <p></p>
-         <p></p>
-         <button name="" id="continue">Continue</button>
-         <p></p>
-         <p></p>
-         <div style="text-align:center;">
+         <div id="buttonContainer">
+            <button name="" id="explore">Explore</button>
+            <button name="" id="suspend">Suspend</button>
+            <button name="" id="terminate">Terminate</button>
+            <button name="" id="continue">Continue</button>
+         </div>
+         <div>
             <h4>PlasticBox</h4>
             <p id="plasticboxspace"> </p>
          </div>
-         <button name="" id="empty">Empty</button>
-
+         <div>
+            <button name="" id="empty">Empty</button>
+         </div>
          <div style="text-align:right;font-size:11px;">
             <hr>
             <a href="#" target="_blank" style="color:#aaa;">Smartcleaner by </a>
          </div>
       </div>
    </body>
+
+
    <script>
       var server = io()
 
@@ -55,7 +54,8 @@
          console.log(payload.resource)
          switch(payload.resource) {
             case 'detector/RoomMap':
-               $("#map").html(payload.value.replace(/\n/g, "<br />"));
+               //$("#map").html(payload.value.replace(/\n/g, "<br />"));
+               drawMap(payload.value);
                break
             case 'detector/SpaceAvailable':
                $("#detectorspace").html("Space Available: " + payload.value);
@@ -105,5 +105,35 @@
          console.log("empty");
          server.emit('command', {name : 'empty'})
       });
+
+
+      function drawMap(map) {
+         console.log(map)
+         map = Array.from(map)
+         
+         var newMap = "<div class='mapRow'>"
+         
+         for(var i = 0; i < map.length; i++ ) {
+            if(map[i] === 'X') {
+               newMap += '<div class="item"><i class="fas fa-2x fa-times"></i></div>'
+            } else if (map[i] === '1') {
+               newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+            } else if (map[i] === '0') {
+               newMap += '<div class="item"><i class="fas fa-2x fa-question"></i></div>'
+            } else if (map[i] === 'r') {
+               newMap += '<div class="item"><i class="fab fa-2x fa-reddit-alien"></i></div>'
+            } else if (map[i] === ',' || map[i] === '|' || map[i] === ' ') {
+               //ignore
+            } else if (map[i] === '\n') { 
+               if(i == map.length)
+                  newMap += '</div>'
+               else 
+                  newMap += '</div><div class="mapRow">'
+            } else {
+               newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+            }
+         }
+         $("#mapContainer").html(newMap);
+      }
    </script>
 </html>

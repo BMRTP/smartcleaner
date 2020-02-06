@@ -1,0 +1,74 @@
+
+body {
+    display: flex;
+    justify-content: center;
+}
+
+#mainContainer { 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50%;
+}
+
+#mainContainer > div {
+    width: 100%;
+}
+
+button {
+    width: 40%;
+    margin-bottom: 15px;
+}
+
+@media screen and (max-width: 992px) {
+    button {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    #mapContainer {
+        transform: scale(0.7);
+    }
+  }
+
+#buttonContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#mapSection {
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center ;
+}
+
+#mapContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: fit-content;
+}
+
+.mapRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+    align-items: flex-start;
+}
+
+.item {
+    height: 4vh;
+    width: 5vh;
+    background-color: #78bec5;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.item > i {
+    position:relative;
+    margin: auto;
+}
