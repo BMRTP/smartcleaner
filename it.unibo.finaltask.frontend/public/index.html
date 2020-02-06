@@ -14,7 +14,8 @@
          </div>
          <div style="text-align:center;">
             <h4>Map</h4>
-            <p id="map" style="height: 100px; font-family: monospace; display: inline-block; text-align:left;"> </p>
+            <!--<p id="map" style="height: 100px; font-family: monospace; display: inline-block; text-align:left;"> </p>-->
+            <canvas id="myCanvas"></canvas>
          </div>
          <div style="text-align:center;">
             <h4>Detector</h4>
@@ -48,62 +49,100 @@
       </div>
    </body>
    <script>
-      var server = io()
+   var server = io()
+   drawing = new Image();
+   drawing.src = "https://cdn.iconscout.com/icon/premium/png-256-thumb/vacuum-1671324-1418626.png"
+   server.on('update', function (payload) {
+      //{ resource: resource, value: value}
+      switch (payload.resource) {
+         case 'detector/RoomMap':
+            $("#map").html(payload.value.replace(/\n/g, "<br />"));
+            let map = payload.value;
+            draw(map)
+            break
+         case 'detector/SpaceAvailable':
+            $("#detectorspace").html("Space Available: " + payload.value);
+            break
+         case 'detector/currentTask':
+            $("#currenttask").html("Robot is: " + payload.value);
+            break
+         case 'detector/waitingForSupervisor':
+            if (payload.value === "true") {
+               $("#waitingsupervisor").html("Robot is waiting for supervisor");
+               $("#continue").show();
+               $("#explore").hide();
+               $("#suspend").hide();
+               $("#terminate").hide();
+            } else {
+               $("#waitingsupervisor").html("");
+               $("#continue").hide();
+               $("#explore").show();
+               $("#suspend").show();
+               $("#terminate").show();
+            }
+            break
+         case 'plasticbox/SpaceAvailable':
+            $("#plasticboxspace").html("Space Available: " + payload.value);
+            break
+      }
+   });
 
-      server.on('update', function (payload) {
-         //{ resource: resource, value: value}
-         console.log(payload.resource)
-         switch(payload.resource) {
-            case 'detector/RoomMap':
-               $("#map").html(payload.value.replace(/\n/g, "<br />"));
-               break
-            case 'detector/SpaceAvailable':
-               $("#detectorspace").html("Space Available: " + payload.value);
-               break
-            case 'detector/currentTask':
-               $("#currenttask").html("Robot is: " + payload.value);
-               break
-            case 'detector/waitingForSupervisor':
-               if(payload.value === "true") {
-                  $("#waitingsupervisor").html("Robot is waiting for supervisor");
-                  $("#continue").show();
-                  $("#explore").hide();
-                  $("#suspend").hide();
-                  $("#terminate").hide();
+
+   $("#explore").click(function () {
+      console.log("explore");
+      server.emit('command', { name: 'explore' })
+   });
+   $("#suspend").click(function () {
+      console.log("suspend");
+      server.emit('command', { name: 'suspend' })
+   });
+   $("#terminate").click(function () {
+      console.log("terminate");
+      server.emit('command', { name: 'terminate' })
+   });
+   $("#continue").click(function () {
+      console.log("continue");
+      server.emit('command', { name: 'continue' })
+   });
+   $("#empty").click(function () {
+      console.log("empty");
+      server.emit('command', { name: 'empty' })
+   });
+   function draw(mapString) {
+      let squareDim = 25;
+      var canvas = document.getElementById('myCanvas');
+      if (canvas.getContext) {
+         var ctx = canvas.getContext('2d');
+         ctx.clearRect(0, 0, canvas.width, canvas.height);
+         ctx.beginPath();
+         ctx.fillStyle = "#0e70a4";
+         ctx.strokeStyle = "#1fa3ec";
+         let c = 0;
+         let r = 0;
+         for (var i = 1; i <= mapString.length; i++) {
+            if (mapString.charAt(i) === '\n') {
+               c++;
+               r = 0;
+            } else if(mapString.charAt(i) === 'X' || mapString.charAt(i) === '1' || mapString.charAt(i) === '0' || mapString.charAt(i) === 'r') {
+               if (mapString.charAt(i) === '1') {
+                  ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+               } else if (mapString.charAt(i) === '0') {
+                  ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                  ctx.moveTo(squareDim * r, squareDim * c);
+                  ctx.lineTo(squareDim * r + squareDim, squareDim * c + squareDim);
+                  ctx.moveTo(squareDim * r, squareDim * c + squareDim);
+                  ctx.lineTo(squareDim * r + squareDim, squareDim * c);
+                  ctx.stroke();
+               } else if(mapString.charAt(i) === 'X'){
+                  ctx.fillRect(squareDim * r, squareDim * c, squareDim, squareDim);
                } else {
-                  $("#waitingsupervisor").html("");
-                  $("#continue").hide();
-                  $("#explore").show();
-                  $("#suspend").show();
-                  $("#terminate").show();
+                  ctx.drawImage(drawing, squareDim * r, squareDim * c, squareDim, squareDim)
                }
-               break
-            case 'plasticbox/SpaceAvailable':
-               $("#plasticboxspace").html("Space Available: " + payload.value);
-               break
+               r++;
+            }
          }
-      });
-    
+      }
+   }
+</script>
 
-      $( "#explore" ).click(function() {
-         console.log("explore");
-         server.emit('command', {name : 'explore'})
-      });
-      $( "#suspend" ).click(function() {
-         console.log("suspend");
-         server.emit('command', {name : 'suspend'})
-      });
-      $( "#terminate" ).click(function() {
-         console.log("terminate");
-         server.emit('command', {name : 'terminate'})
-      });
-      $( "#continue" ).click(function() {
-         console.log("continue");
-         server.emit('command', {name : 'continue'})
-      });
-      $( "#empty" ).click(function() {
-         console.log("empty");
-         server.emit('command', {name : 'empty'})
-      });
-   </script>
 </html>

@@ -1,6 +1,6 @@
 package it.unibo.finaltask.requirements.model;
 
-public abstract class WRoom {
+public abstract class WRoomMap {
 
 	public boolean isExplored() {
 		for (int x = 0; x < width(); x++) {
