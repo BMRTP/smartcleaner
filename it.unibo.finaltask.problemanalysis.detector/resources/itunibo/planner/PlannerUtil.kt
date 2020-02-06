@@ -226,12 +226,12 @@ object plannerUtil {
 		return Pair(1, 1) //default value
 	}
 
-	fun getPlanMoves(x: Int, y: Int, direction: Direction? = null): Iterator<String> {
+	fun getPlanMoves(x: Int, y: Int, direction: Direction? = null): Plan {
 		setGoal(x, y, direction)
-		return doPlan()!!.map { it.toString() }.iterator()
+		return RobotPlan( doPlan()!!.map { it.toString() }.iterator() )
 	}
 
-	fun getSafePlanMoves(x: Int, y: Int, direction: Direction? = null): Iterator<String> {
+	fun getSafePlanMoves(x: Int, y: Int, direction: Direction? = null): Plan {
 		val oldMap = RoomMap.getRoomMap()
 		val newMap = RoomMap.mapFromString(oldMap.toString().replace('0', 'X'))
 
@@ -250,15 +250,15 @@ object plannerUtil {
 		return RoomMap.getRoomMap().isClean()
 	}
 
-	fun goHomeMoves(): Iterator<String> {
+	fun goHomeMoves(): Plan {
 		if (initialState!!.getX() == 1 && initialState!!.getY() == 1) {
-			return listOf<String>().iterator()
+			return RobotPlan(listOf<String>().iterator())
 		} else {
 			return getSafePlanMoves(1, 1, Direction.DOWN)
 		}
 	}
 
-	fun goPlasticBoxMoves(): Iterator<String> {
+	fun goPlasticBoxMoves(): Plan {
 		return goHomeMoves()
 	}
 

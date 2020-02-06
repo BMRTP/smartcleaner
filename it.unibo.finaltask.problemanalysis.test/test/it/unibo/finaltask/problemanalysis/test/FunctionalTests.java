@@ -80,7 +80,7 @@ public class FunctionalTests {
 		QActorInterface detector = new QActorInterface("127.0.0.1", 8022);
 		detector.sendMessage("msg(explore, dispatch, gui, detector, explore(x), 1)");
 		
-		String finalMap = CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> {
 			String curMap = RoomMap.mapFromString(map).toString();
 			return curMap.equals(Maps.CLEAN_MAP_1) || curMap.equals(Maps.CLEAN_MAP_2) || curMap.equals(Maps.CLEAN_MAP_3);
 		});
@@ -138,19 +138,19 @@ public class FunctionalTests {
 		detector.sendMessage("msg(explore, dispatch, test, detector, explore(x), 1)");
 		detector.close();
 		
-		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> task.equals("exploring"));
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> task.equals("Exploring"));
 
 		CoapUtils.pollResourceValue("coap://localhost:5683/detector/SpaceAvailable", space -> Integer.parseInt(space) == 0);
 
-		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> !task.equals("exploring"));
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> !task.equals("Exploring"));
 
 		CoapUtils.pollResourceValue("coap://localhost:5683/plasticbox/SpaceAvailable", space -> Integer.parseInt(space) == 0);
 
-		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> !task.equals("exploring"));
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> !task.equals("Exploring"));
 		
 		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsInSubArea(Maps.MINLASTPOS_X, Maps.MAXLASTPOS_X, Maps.MINLASTPOS_Y, Maps.MAXLASTPOS_Y, RoomMap.mapFromString(map)));
 		
-		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> task.equals("exploring"));
+		CoapUtils.pollResourceValue("coap://localhost:5683/detector/currentTask", task -> task.equals("Exploring"));
 	}
 	/**
 	 * 5. Il detectorBox contenga esattamente una bottiglia a seguito della raccolta da parte del robot (supponendo che non ne abbia raccolta alcuna in precedenza).
@@ -261,7 +261,6 @@ public class FunctionalTests {
 
 	}
 	
-	@SuppressWarnings("deprecation")
 	@After
 	public void stopComponents() throws Exception {
 		Runtime.getRuntime().exec("taskkill /FI \"WindowTitle eq "+ PREFIX_WINDOW_NAME +"*\" /T /F");
