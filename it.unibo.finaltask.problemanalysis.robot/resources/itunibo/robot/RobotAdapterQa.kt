@@ -35,12 +35,15 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 						grabberSupport = virtualSupport
 						sonarSupport = virtualSupport
 						classifierSupport = virtualSupport
-
-
 					}
 					"real" -> {
 						robotSupport = RealRobotSupport(port)
-						sonarSupport = RealSonarSupport()
+						//sonarSupport = RealSonarSupport()
+						sonarSupport = object:SonarSupport {
+							override fun observe(distanceHandler: (Double) -> Unit) {
+								//nothing
+							}
+						}
 						val grabber = RealGrabberSupport()
 						classifierSupport = grabber
 						grabberSupport = grabber

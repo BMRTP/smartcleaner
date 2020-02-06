@@ -52,7 +52,7 @@ QActor detector context ctxDetector {
 
 	   var wasABottle = false
 	   //VIRTUAL ROBOT
-       var StepTime = 330
+       var StepTime = 1000
 	   var BackStepTime = 0
 	   var completedPerimeter = false
 	   
@@ -119,7 +119,7 @@ QActor detector context ctxDetector {
 		println("STATE: continuePerimeter")
 		forward smartrobot -m cmd : cmd(d)
 		run itunibo.planner.moveUtils.rotateRight90(myself)
-		delay 1000
+		delay 2000
 	} Goto doStep
 	
 	State doStep {
@@ -151,7 +151,7 @@ QActor detector context ctxDetector {
 		println("STATE: stepFailed")
  		onMsg(stepfail : stepfail(DURATION)) {
  			println("detector founds an obstacle after ${payloadArg(0)}")
- 			["BackStepTime = payloadArg(0).toInt() - 20"] //TODO tune compensation
+ 			["BackStepTime = 0"] //TODO tune compensation
  			request obstacleclassifier -m getobstacletype : getobstacletype(type)
  		}
 	}
@@ -193,7 +193,7 @@ QActor detector context ctxDetector {
     	if "(!completedPerimeter)" {
 	    	forward smartrobot -m cmd : cmd(a)
 	    	run itunibo.planner.moveUtils.rotateLeft90(myself)
-	    	delay 1000
+	    	delay 2000
     	}
     } 
     Goto doStep if "(!completedPerimeter)" else resetPlan
@@ -259,7 +259,7 @@ QActor detector context ctxDetector {
   		println("STATE: rotateRight")
   		forward smartrobot -m cmd : cmd(d)
 		run itunibo.planner.moveUtils.rotateRight90(myself)
-		delay 1000
+		delay 2000
   	} Goto exploringWithPlan
   	
   	State checkA {
@@ -270,7 +270,7 @@ QActor detector context ctxDetector {
   		println("STATE: rotateLeft")
   		forward smartrobot -m cmd : cmd(a)
 	    run itunibo.planner.moveUtils.rotateLeft90(myself)
-	    delay 1000
+	    delay 2000
   	} Goto exploringWithPlan
 	
 	State emptingBox {
