@@ -2,7 +2,7 @@ package it.unibo.finaltask.requirements.test;
 
 import org.junit.Test;
 import it.unibo.finaltask.requirements.utils.QakUtils;
-import it.unibo.finaltask.requirements.model.WRoom;
+import it.unibo.finaltask.requirements.model.WRoomMap;
 import it.unibo.finaltask.requirements.utils.PropertyUtils;
 
 public class RequirementsTests {
@@ -13,7 +13,7 @@ public class RequirementsTests {
 	@Test(timeout=3000)
 	public void detectorExploreTheEntireRoom() {
 		QakUtils.sendExploreToDetector();
-		WRoom room = PropertyUtils.waitUntilRoomIsExplored();
+		WRoomMap room = PropertyUtils.waitUntilRoomIsExplored();
 		assert(room.toString().equals(String.join(
 						   "\n", 
 						   "X, X, X, X, X, X, X, X,   ",
@@ -31,7 +31,7 @@ public class RequirementsTests {
 	 */
 	@Test(timeout=3000)
 	public void detectorIsOnTopLeftCornerAtStart() {
-		WRoom wroom = PropertyUtils.getInitialState();
+		WRoomMap wroom = PropertyUtils.getInitialState();
 		assert(wroom.toString().equals(String.join(
 						   "\n", 
 						   "X, X,",

@@ -61,11 +61,6 @@ public class RoomMap implements Serializable{
 		this.put(0, 0, new Box(true, false, false)); //top left angle
 		this.put(1, 0, new Box(true, false, false)); //plasticbox
 	}
-	
-//	public Map<Coordinate, Box> getMapClone() {
-//		return new HashMap<>(this.roomMap);
-//	}
-
 
 	public void put(int x, int y, Box box) {
 		try {
@@ -91,7 +86,6 @@ public class RoomMap implements Serializable{
 	public boolean isObstacle(int x, int y) {
 		try {
 			Box box = roomMap.get(y).get(x);
-			//System.out.println(" ... RoomMap  isObstacle " + box.isObstacle());
 			if  (box == null)
 				return false;
 			if (box.isObstacle())

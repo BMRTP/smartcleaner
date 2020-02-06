@@ -3,9 +3,9 @@ package it.unibo.finaltask.requirements.utils;
 import it.unibo.finaltask.requirements.model.*;
 
 public class PropertyUtils {
-	public static WRoom waitUntilRoomIsExplored() {
+	public static WRoomMap waitUntilRoomIsExplored() {
 		
-		return new WRoom() {
+		return new WRoomMap() {
 			@Override
 			public int width() {
 				return 9;
@@ -37,8 +37,8 @@ public class PropertyUtils {
 		};
 	}
 	
-	public static WRoom getInitialState() {
-		return new WRoom() {
+	public static WRoomMap getInitialState() {
+		return new WRoomMap() {
 			@Override
 			public int width() {
 				return 9;

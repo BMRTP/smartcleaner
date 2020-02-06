@@ -15,9 +15,16 @@
          <div style="text-align:center;">
             <h3>Smartcleaner</h3>
          </div>
-         <div id="mapSection" style="text-align:center;">
-            <h4>Map</h4>
-            <div id="mapContainer"></div>
+         <div id="mapSection">
+            <div style="display: flex; flex-direction: row;">
+               <h4 style="text-align:center; margin:0">Map</h4> &nbsp  &nbsp
+               <label class="switch">
+                  <input type="checkbox" id="mapCheckbox">
+                  <span class="slider round"></span>
+               </label>
+            </div>
+            <div id="mapContainer" style="display:none"></div>
+            <canvas id="myCanvas"></canvas>
          </div>
          <div style="text-align:center;">
             <h4>Detector</h4>
@@ -48,14 +55,23 @@
 
    <script>
       var server = io()
-
+      drawing = new Image();
+      drawing.src = "https://cdn.iconscout.com/icon/premium/png-256-thumb/vacuum-1671324-1418626.png"
+      
+      $("#mapCheckbox").change(function() { 
+         $("#myCanvas").toggle()
+         $("#mapContainer").toggle()
+      });
+   
       server.on('update', function (payload) {
          //{ resource: resource, value: value}
-         console.log(payload.resource)
-         switch(payload.resource) {
+         switch (payload.resource) {
             case 'detector/RoomMap':
-               //$("#map").html(payload.value.replace(/\n/g, "<br />"));
-               drawMap(payload.value);
+               $("#map").html(payload.value.replace(/\n/g, "<br />"))
+               let map = payload.value
+               console.log(map)
+               drawOnFlex(map)
+               drawOnCanvas(map)
                break
             case 'detector/SpaceAvailable':
                $("#detectorspace").html("Space Available: " + payload.value);
@@ -64,7 +80,7 @@
                $("#currenttask").html("Robot is: " + payload.value);
                break
             case 'detector/waitingForSupervisor':
-               if(payload.value === "true") {
+               if (payload.value === "true") {
                   $("#waitingsupervisor").html("Robot is waiting for supervisor");
                   $("#continue").show();
                   $("#explore").hide();
@@ -83,57 +99,91 @@
                break
          }
       });
-    
 
-      $( "#explore" ).click(function() {
+
+      $("#explore").click(function () {
          console.log("explore");
-         server.emit('command', {name : 'explore'})
+         server.emit('command', { name: 'explore' })
       });
-      $( "#suspend" ).click(function() {
+      $("#suspend").click(function () {
          console.log("suspend");
-         server.emit('command', {name : 'suspend'})
+         server.emit('command', { name: 'suspend' })
       });
-      $( "#terminate" ).click(function() {
+      $("#terminate").click(function () {
          console.log("terminate");
-         server.emit('command', {name : 'terminate'})
+         server.emit('command', { name: 'terminate' })
       });
-      $( "#continue" ).click(function() {
+      $("#continue").click(function () {
          console.log("continue");
-         server.emit('command', {name : 'continue'})
+         server.emit('command', { name: 'continue' })
       });
-      $( "#empty" ).click(function() {
+      $("#empty").click(function () {
          console.log("empty");
-         server.emit('command', {name : 'empty'})
+         server.emit('command', { name: 'empty' })
       });
-
-
-      function drawMap(map) {
-         console.log(map)
-         map = Array.from(map)
-         
-         var newMap = "<div class='mapRow'>"
-         
-         for(var i = 0; i < map.length; i++ ) {
-            if(map[i] === 'X') {
-               newMap += '<div class="item"><i class="fas fa-2x fa-times"></i></div>'
-            } else if (map[i] === '1') {
-               newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
-            } else if (map[i] === '0') {
-               newMap += '<div class="item"><i class="fas fa-2x fa-question"></i></div>'
-            } else if (map[i] === 'r') {
-               newMap += '<div class="item"><i class="fab fa-2x fa-reddit-alien"></i></div>'
-            } else if (map[i] === ',' || map[i] === '|' || map[i] === ' ') {
-               //ignore
-            } else if (map[i] === '\n') { 
-               if(i == map.length)
-                  newMap += '</div>'
-               else 
-                  newMap += '</div><div class="mapRow">'
-            } else {
-               newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+   
+      function drawOnCanvas(mapString) {
+         let squareDim = 25;
+         var canvas = document.getElementById('myCanvas');
+         if (canvas.getContext) {
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.fillStyle = "#0e70a4";
+            ctx.strokeStyle = "#1fa3ec";
+            let c = 0;
+            let r = 0;
+            for (var i = 1; i <= mapString.length; i++) {
+               if (mapString.charAt(i) === '\n') {
+                  c++;
+                  r = 0;
+               } else if(mapString.charAt(i) === 'X' || mapString.charAt(i) === '1' || mapString.charAt(i) === '0' || mapString.charAt(i) === 'r') {
+                  if (mapString.charAt(i) === '1') {
+                     ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                  } else if (mapString.charAt(i) === '0') {
+                     ctx.strokeRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                     ctx.moveTo(squareDim * r, squareDim * c);
+                     ctx.lineTo(squareDim * r + squareDim, squareDim * c + squareDim);
+                     ctx.moveTo(squareDim * r, squareDim * c + squareDim);
+                     ctx.lineTo(squareDim * r + squareDim, squareDim * c);
+                     ctx.stroke();
+                  } else if(mapString.charAt(i) === 'X'){
+                     ctx.fillRect(squareDim * r, squareDim * c, squareDim, squareDim);
+                  } else {
+                     ctx.drawImage(drawing, squareDim * r, squareDim * c, squareDim, squareDim)
+                  }
+                  r++;
+               }
             }
          }
-         $("#mapContainer").html(newMap);
       }
+
+      function drawOnFlex(map) {
+            map = Array.from(map)
+            
+            var newMap = "<div class='mapRow'>"
+            
+            for(var i = 0; i < map.length; i++ ) {
+               if(map[i] === 'X') {
+                  newMap += '<div class="item"><i class="fas fa-2x fa-times"></i></div>'
+               } else if (map[i] === '1') {
+                  newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+               } else if (map[i] === '0') {
+                  newMap += '<div class="item"><i class="fas fa-2x fa-question"></i></div>'
+               } else if (map[i] === 'r') {
+                  newMap += '<div class="item"><i class="fab fa-2x fa-reddit-alien"></i></div>'
+               } else if (map[i] === ',' || map[i] === '|' || map[i] === ' ') {
+                  //ignore
+               } else if (map[i] === '\n') { 
+                  if(i == map.length)
+                     newMap += '</div>'
+                  else 
+                     newMap += '</div><div class="mapRow">'
+               } else {
+                  newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+               }
+            }
+            $("#mapContainer").html(newMap);
+         }
    </script>
 </html>
