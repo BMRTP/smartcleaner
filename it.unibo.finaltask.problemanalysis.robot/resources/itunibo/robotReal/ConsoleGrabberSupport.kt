@@ -3,7 +3,7 @@ package itunibo.robotReal
 import itunibo.robot.GrabberSupport
 import itunibo.robot.ClassifierSupport
 
-class RealGrabberSupport : GrabberSupport, ClassifierSupport {
+class ConsoleGrabberSupport : GrabberSupport, ClassifierSupport {
 
 	var lastObstacle: String = "nothing"
 
@@ -14,8 +14,8 @@ class RealGrabberSupport : GrabberSupport, ClassifierSupport {
 	}
 
 	override fun classify(): String {
-		//print("Insert the obstacle type: ")
-		//return readLine() ?: "Unknown"
-		return "wall"
+		print("Insert the obstacle type: ")
+		return readLine() ?: "Unknown"
+		//return "wall"
 	}
 }
