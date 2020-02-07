@@ -35,8 +35,8 @@ class tvocAdapterQa(name: String) : ActorBasic(name) {
 				
 				tvocSupport.observe({ value ->
 					runBlocking {
-						println("Emitting TVOC: ${value.first}")
-						mySelf.emit("tvocvalue", "tvocvalue(${value.first})");
+						println("Emitting TVOC: ${value.second}")
+						mySelf.emit("tvocvalue", "tvocvalue(${value.second})");
 					}
 				})
 

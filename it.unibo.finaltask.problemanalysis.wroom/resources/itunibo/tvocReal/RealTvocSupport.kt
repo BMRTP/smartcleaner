@@ -14,14 +14,14 @@ class RealTvocSupport : TvocSupport {
 	private val handlers: MutableList<(Pair<Int, Int>) -> Unit> = mutableListOf()
 
 	init {
-		println("sonarAdapter starting!!")
+		println("RealTvocSupport starting!!")
 		startProcess()
 		startTheReader()
-		println("sonarAdapter started!")
+		println("RealTvocSupport started!")
 	}
 
 	fun startProcess() {
-		p = Runtime.getRuntime().exec("sudo ./ccs811demo")
+		p = Runtime.getRuntime().exec("./ccs811demo")
 		tvocStream = p!!.getInputStream()
 	}
 
@@ -33,11 +33,13 @@ class RealTvocSupport : TvocSupport {
 
 	fun readTvoc(): Pair<Int, Int> {
 		var data: Pair<Int, Int>? = null;
-		while (data == null || tvocStream!!.available() > 0) {
-			val line = BufferedReader(InputStreamReader(tvocStream)).readLine();
-			val split = line.split('/')
-			if (split.size >= 2) {
-				data = (split[0].toIntOrNull() ?: 400) to (split[1].toIntOrNull() ?: 0) //400/0 default value
+		while (data == null) {
+			val line = BufferedReader(InputStreamReader(tvocStream)).readLine()
+			if (line != null) {
+				val split = line.split('/')
+				if (split.size >= 2) {
+					data = (split[0].toIntOrNull() ?: 400) to (split[1].toIntOrNull() ?: 0) //400/0 default value
+				}
 			}
 		}
 		return data;
@@ -52,7 +54,9 @@ class RealTvocSupport : TvocSupport {
 					value = withTimeoutOrNull(10000L) {
 						readTvoc()
 					}
+					
 					if (value == null) {
+						println("Tvoc process timedout! Restarting...")
 						stopProcess()
 						startProcess()
 					}
