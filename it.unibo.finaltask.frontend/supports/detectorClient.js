@@ -1,27 +1,40 @@
-const client = require('./qakClient')
+const net = require('net');
 
-const socket = client.createSocket()
+const HOST = "localhost"
+const PORT = 8022
 
-exports.init = () => {
-    return client.start(socket, 8022, "localhost") 
+let socket
+
+function connect() {
+    socket = new net.Socket();
+    socket.connect(PORT, HOST, function() {
+        console.log('Connected to detector: ' + HOST + ':' + PORT);
+    });
+
+    socket.on('error', function() {}); // need this line so it wont throw exception
+
+    socket.on('close', function() {
+        connect();
+    });
 }
+exports.connect = connect
 
 exports.explore = () => {
-    return client.sendMessage(socket, "msg(explore, dispatch, gui, detector, explore(x), 1)")
+    socket.write("msg(explore, dispatch, gui, detector, explore(x), 1)\n")
 }
 
 exports.suspend = () => {
-    return client.sendMessage(socket, "msg(suspend, dispatch, gui, detector, suspend(x), 1)")
+    socket.write("msg(suspend, dispatch, gui, detector, suspend(x), 1)\n")
 }
 
 exports.terminate = () => {
-    return client.sendMessage(socket, "msg(terminate, dispatch, gui, detector, terminate(x), 1)")
+    socket.write("msg(terminate, dispatch, gui, detector, terminate(x), 1)\n")
 }
 
 exports.continuee = () => {
-    return client.sendMessage(socket, "msg(continue, dispatch, gui, detector,continue(x), 1)")
+    socket.write("msg(continue, dispatch, gui, detector,continue(x), 1)\n")
 }
 
 exports.close = () => {
-    client.close(socket)
+    socket.close()
 }
