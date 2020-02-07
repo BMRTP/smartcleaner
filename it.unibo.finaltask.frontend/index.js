@@ -1,5 +1,6 @@
 const detector = require('./supports/detectorClient')
 const plasticbox = require('./supports/plasticboxClient')
+const robot = require('./supports/robotClient')
 const coapClient = require('./supports/coap')
 const express = require('express')
 const app = express();
@@ -13,6 +14,7 @@ var updates = new Map()
 
 detector.connect()
 plasticbox.connect()
+robot.connect()
 
 app.get('/style.css', function (req, res) {
     res.sendFile(__dirname + '/public/style.css');
@@ -46,6 +48,12 @@ io.on('connection', function (socket) {
         case 'empty':
             plasticbox.empty()
             break
+        case 'isbottle':
+            robot.isbottle()
+            break
+        case 'notbottle':
+            robot.notbottle()
+            break
       }
     })
     updates.forEach((value, key, map) => socket.emit('update', {resource : key, value: value}))
@@ -65,6 +73,7 @@ function observeProperties() {
     coapClient.observeProperty("detector/currentTask", coapUpdatesHandler)
     coapClient.observeProperty("detector/waitingForSupervisor", coapUpdatesHandler)
     coapClient.observeProperty("plasticbox/SpaceAvailable", coapUpdatesHandler)
+	coapClient.observeProperty("robot/cam", coapUpdatesHandler)
 }
 
 observeProperties()
