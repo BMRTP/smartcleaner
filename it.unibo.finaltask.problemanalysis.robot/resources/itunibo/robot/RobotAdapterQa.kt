@@ -2,7 +2,7 @@ package itunibo.robot
 
 import it.unibo.kactor.*
 import alice.tuprolog.*
-import itunibo.robotVirtual.VirtualRobotSupport
+import itunibo.robotVirtual.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.runBlocking
@@ -14,6 +14,7 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 	lateinit var grabberSupport: GrabberSupport
 	lateinit var sonarSupport: SonarSupport
 	lateinit var classifierSupport: ClassifierSupport
+	
 	val mySelf = this
 
 	init {
@@ -57,7 +58,6 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 						mySelf.emit("sonar", "sonar($distance)");
 					}
 				})
-
 			}
 		}
 	}

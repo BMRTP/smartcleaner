@@ -52,8 +52,8 @@ class VirtualRobotSupport(hostName: String = "localhost", portStr: String = "899
 		return lastObstacle
 	}
 
-	override fun observe(distanceHandler: (Double) -> Unit) {
-		distanceHandlers.add(distanceHandler)
+	override fun observe(handleData: (Double) -> Unit) {
+		distanceHandlers.add(handleData)
 	}
 
 	fun sendMsg(v: String) {

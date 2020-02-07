@@ -95,7 +95,7 @@ sourceSets {
 
 mainClassName = 'it.unibo.ctxWRoom.MainCtxWRoomKt'
 
-/*
+
 jar {
     println("executing jar")
     from sourceSets.main.allSource
@@ -103,4 +103,4 @@ jar {
         attributes 'Main-Class': "$mainClassName"
     }
 }
-*/
+

@@ -13,6 +13,7 @@
 !it.unibo.finaltask.problemanalysis.robot/build.gradle
 !it.unibo.finaltask.problemanalysis.robot/basicRobotConfig.pl
 !it.unibo.finaltask.problemanalysis.wroom/build.gradle
+!it.unibo.finaltask.problemanalysis.wroom/basicRobotConfig.pl
 
 
 !it.unibo.finaltask.problemanalysis.test/build.gradle

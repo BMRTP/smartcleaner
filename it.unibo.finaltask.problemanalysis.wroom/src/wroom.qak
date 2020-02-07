@@ -11,12 +11,14 @@ Context ctxDetector ip [ host= "127.0.0.1" port= 8022 ]
 
 ExternalQActor detector context ctxDetector
 
+CodedQActor tvocadapter context ctxWRoom className "itunibo.tvoc.tvocAdapterQa"
+
 QActor roomagent context ctxWRoom { 
 	[" val TVOCHighThreshold = 200.0
 	   var value = 0.0
 	"]
 	
-	State s0 initial {  
+	State s0 initial { 
 		println("roomagent starts")
 	}
 	Goto notalerted
@@ -50,26 +52,4 @@ QActor roomagent context ctxWRoom {
 	Goto notalerted if "(value <= TVOCHighThreshold)" else alerted
 }
 
-CodedQActor tvocadapter context ctxWRoom className "itunibo.tvoc.tvocAdapterQa"
 
-QActor tvoc context ctxWRoom {
-	
-	State s0 initial {  
-		println("tvoc starts")
-	}
-	Goto work
-	
-	State work {
-		request tvocadapter -m gettvoc : gettvoc(value)
-	}
-	Transition t1 
-		whenReply tvoc -> handlevalue
-		
-	State handlevalue {
-		onMsg(tvoc : tvoc(VALUE)){
-			emit tvocvalue : tvocvalue($payloadArg(0))
-		}
-		delay 1000
-	}
-	Goto work
-}
