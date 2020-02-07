@@ -121,7 +121,7 @@
                $("#plasticboxspace").html("Space Available: " + payload.value);
                break
 			case 'robot/cam':
-               $("#lastobstacleimg").setAttribute('src', 'data:image/png;base64,'+ payload.value);
+               $("#lastobstacleimg").attr('src', 'data:image/png;base64,'+ payload.value);
                break
          }
       });

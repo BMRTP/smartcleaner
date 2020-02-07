@@ -24,7 +24,7 @@ Reply   throwed : throwed(QUANTITY)
 Dispatch init : init(NDB, WITHMAP)
 
 Context ctxDetector ip [ host= "localhost" port= 8022 ]  
-Context ctxRobot ip [ host= "127.0.0.1" port= 8018 ]  
+Context ctxRobot ip [ host= "192.168.1.177" port= 8018 ]  
 Context ctxPlasticBox ip [ host= "127.0.0.1" port= 8016 ]
 
 ExternalQActor smartrobot context ctxRobot

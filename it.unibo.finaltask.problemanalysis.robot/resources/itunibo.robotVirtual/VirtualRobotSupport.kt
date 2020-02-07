@@ -48,9 +48,11 @@ class VirtualRobotSupport(hostName: String = "localhost", portStr: String = "899
 		}
 	}
 
-	override fun classify(): String {
-		return lastObstacle
+	override fun classify(handler: (String) -> Unit) {
+		handler(lastObstacle)
 	}
+	
+	override fun suggest(obstacle:String) { }
 
 	override fun observe(handleData: (Double) -> Unit) {
 		distanceHandlers.add(handleData)

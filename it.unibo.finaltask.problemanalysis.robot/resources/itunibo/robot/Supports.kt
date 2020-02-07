@@ -17,5 +17,7 @@ interface SonarSupport : ObservableSupport<Double> {
 }
 
 interface ClassifierSupport {
-	fun classify(): String
+	fun classify(handler: (String) -> Unit)
+	
+	fun suggest(obstacle:String)
 }
