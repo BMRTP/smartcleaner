@@ -8,6 +8,7 @@ import org.eclipse.californium.core.server.resources.CoapExchange
 import org.eclipse.californium.core.CoapClient
 import org.eclipse.californium.core.CoapResponse
 import org.eclipse.californium.core.coap.MediaTypeRegistry
+import org.eclipse.californium.core.network.config.NetworkConfig
 
 
 object coapServer {
@@ -21,6 +22,7 @@ object coapServer {
 	class resourceCreator : CoapResource("resources") {
 		override fun handlePOST(exchange: CoapExchange) {
 			val res = exchange.getRequestText()
+			println("Creating resource $res")
 			server.add(Resource(res))
 			changed()    // notify all CoAp observers
 			exchange.respond(CREATED)
@@ -30,6 +32,7 @@ object coapServer {
 	class Resource(name: String) : CoapResource(name) {
 		override fun handlePOST(exchange: CoapExchange) {
 			val res = exchange.getRequestText() //name|initial
+			println("Creating property $res")
 			this.add(Property(res))
 			changed()    // notify all CoAp observers
 			exchange.respond(CREATED)
@@ -49,6 +52,7 @@ object coapServer {
 
 		override fun handlePUT(exchange: CoapExchange) {
 			value = exchange.getRequestText()
+			println("handle PUT of $name with $value")
 			changed()    // notify all CoAp observers
 			exchange.respond(CHANGED)
 		}
