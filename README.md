@@ -25,7 +25,7 @@ Launch `gradle run`, stricly in order within the following folders:
   To interact with the robot, launch `node index.js` within `it.unibo.finaltask.frontend`. (The first time `npm install` is required).
 
 
-## Deployment on virtual robot
+## Deployment on physical robot
 
 To deploy the project on the real robot you have to make a little extra effort.
 
