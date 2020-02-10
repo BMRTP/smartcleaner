@@ -1,4 +1,4 @@
-package it.unibo.finaltask.problemanalysis.test;
+package it.unibo.finaltask.project.test;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -8,17 +8,17 @@ import org.junit.Test;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 
-import it.unibo.finaltask.problemanalysis.test.utils.CoapUtils;
-import it.unibo.finaltask.problemanalysis.test.utils.Maps;
-import it.unibo.finaltask.problemanalysis.test.utils.QActorInterface;
-import it.unibo.finaltask.problemanalysis.test.utils.Utils;
+import it.unibo.finaltask.project.test.utils.CoapUtils;
+import it.unibo.finaltask.project.test.utils.Maps;
+import it.unibo.finaltask.project.test.utils.QActorInterface;
+import it.unibo.finaltask.project.test.utils.Utils;
 import itunibo.planner.model.RoomMap;
 
 public class FunctionalTests {
 	public static final String BASE_URL = "http://localhost:8090";
 	public static final String CHROME_DRIVER_PATH = "C:\\chromedriver.exe";
 	
-	public static final String VIRTUAL_ROBOT_SHORTCUT_PATH = "C:\\Users\\emanu\\OneDrive\\Desktop\\virtualRobot.lnk";
+	public static final String VIRTUAL_ROBOT_SHORTCUT_PATH = "C:\\Users\\loren\\Desktop\\VirtualRobot.lnk";
 	public static final String VIRTUAL_ROBOT_WINDOW_NAME = "virtualRobot";
 	
 	public static final String PREFIX_WINDOW_NAME = "roomcleaner_";
@@ -31,10 +31,10 @@ public class FunctionalTests {
 	public static final String DETECTOR_WINDOW_NAME = "detector";
 	
 	public static final String COAPSERVER_PROJECT_NAME = "it.unibo.finaltask.coapserver";
-	public static final String ROBOT_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.robot";
-	public static final String PLASTICBOX_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.plasticbox";
-	public static final String WROOM_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.wroom";
-	public static final String DETECTOR_PROJECT_NAME = "it.unibo.finaltask.problemanalysis.detector";
+	public static final String ROBOT_PROJECT_NAME = "it.unibo.finaltask.project.robot";
+	public static final String PLASTICBOX_PROJECT_NAME = "it.unibo.finaltask.project.plasticbox";
+	public static final String WROOM_PROJECT_NAME = "it.unibo.finaltask.project.wroom";
+	public static final String DETECTOR_PROJECT_NAME = "it.unibo.finaltask.project.detector";
 	
 	
 	public static final String COAPSERVER_START_CMD = "cmd /c start \"" + PREFIX_WINDOW_NAME + COAPSERVER_WINDOW_NAME + "\" /d \"../"+ COAPSERVER_PROJECT_NAME +"\" gradle run";
@@ -68,7 +68,7 @@ public class FunctionalTests {
 		
 		driver = new ChromeDriver();
 		driver.get(BASE_URL);
-		Thread.sleep(15000);
+		Thread.sleep(80000);
 	}
 
 	/**
@@ -228,9 +228,7 @@ public class FunctionalTests {
 		
 		CoapUtils.pollResourceValue("coap://localhost:5683/detector/RoomMap", map -> Utils.robotIsInSubArea(1, 5, 3, 5, RoomMap.mapFromString(map)));
 		
-		room.sendMessage("msg(set, dispatch, test, tvocadapter, set(100.0), 1)");
-		Thread.sleep(1000);
-		room.sendMessage("msg(set, dispatch, test, tvocadapter, set(0.0), 1)");
+		room.sendMessage("msg(tvocvalue, event, tvocadapter, none, tvocvalue(250), 1)");
 
 		sender.close();
 		room.close();
