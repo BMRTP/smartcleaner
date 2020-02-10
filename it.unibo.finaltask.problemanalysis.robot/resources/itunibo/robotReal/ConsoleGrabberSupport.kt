@@ -46,6 +46,7 @@ class ConsoleGrabberSupport(frontEndUrl: String) :
 			val p = Runtime.getRuntime().exec(cmd);
 			val input = p.getInputStream();
 			val buffer = StringBuilder(3500000);
+			buffer.append("{\"img\":\"")
 			var c: Char;
 			while (true) {
 				c = input.read().toChar();
@@ -56,21 +57,21 @@ class ConsoleGrabberSupport(frontEndUrl: String) :
 				}
 			}
 			p.destroy();
-			val img = buffer.toString();
+			buffer.append("\"}")
+			val json = buffer.toString();
 
 
-			val httpclient = HttpClients.createDefault();
-			val httppost = HttpPost(frontEndUrl);
+			val httpclient = HttpClients.createDefault()
+			val httppost = HttpPost(frontEndUrl)
 
+			val entity = StringEntity(json)
+			httppost.setEntity(entity)
+			httppost.setHeader("Accept", "application/json")
+			httppost.setHeader("Content-type", "application/json")
 
-			val json = "{\"img\":\"$img\"}";
-			val entity = StringEntity(json);
-			httppost.setEntity(entity);
-			httppost.setHeader("Accept", "application/json");
-			httppost.setHeader("Content-type", "application/json");
-
-			val response = httpclient.execute(httppost);
+			val response = httpclient.execute(httppost)
 			val code = response.getStatusLine().getStatusCode()
+			httpclient.close()
 			println("Upload done: $code")
 
 
