@@ -1,6 +1,6 @@
 const net = require('net');
 
-const HOST = "192.168.1.177"
+const HOST = "192.168.137.100"
 const PORT = 8018
 
 let socket

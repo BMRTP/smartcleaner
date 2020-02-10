@@ -6,13 +6,16 @@ const express = require('express')
 const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
+const defaultimg = require('./defaultObstacleImage');
 
-app.use(express.json());
+let bodyParser = require('body-parser');
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 let clients = []
 let updates = new Map()
 
-let obstacle = ""
+let obstacle = defaultimg.img
 
 
 detector.connect()
