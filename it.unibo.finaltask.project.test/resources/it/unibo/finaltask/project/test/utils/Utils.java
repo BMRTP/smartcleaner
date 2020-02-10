@@ -1,4 +1,4 @@
-package it.unibo.finaltask.problemanalysis.test.utils;
+package it.unibo.finaltask.project.test.utils;
 
 import itunibo.planner.model.RoomMap;
 
