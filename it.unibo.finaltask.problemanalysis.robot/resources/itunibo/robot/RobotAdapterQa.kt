@@ -23,11 +23,11 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 			println("Robot adapter failed while loading prolog.")
 		} else {
 			val sol2 = pengine.solve("robotType(TYPE).")
-			val TYPE = sol2.getVarValue("TYPE").toString()
+			val TYPE = sol2.getVarValue("TYPE").toString().trim('\'')
 			val solVirtual = pengine.solve("virtualRobot(VIRTUAL_PORT).")
-			val solReal = pengine.solve("realRobot(SERIAL_PORT, COAP_HOSTNAME, COAP_PORT, COAP_RESOURCE_NAME).")
+			val solReal = pengine.solve("realRobot(SERIAL_PORT, FRONTEND_URL).")
 			if (TYPE == "virtual") {
-				val robotType = solVirtual.getVarValue("ROBOT_TYPE").toString()
+
 				val port = solVirtual.getVarValue("VIRTUAL_PORT").toString()
 
 				val virtualSupport = VirtualRobotSupport("localhost", port)
@@ -40,10 +40,8 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 
 			} else if (TYPE == "real") {
 
-				val SERIAL_PORT = solReal.getVarValue("SERIAL_PORT").toString()
-				val COAP_HOSTNAME = solReal.getVarValue("COAP_HOSTNAME").toString()
-				val COAP_PORT = solReal.getVarValue("COAP_PORT").toString().toInt()
-				val COAP_RESOURCE_NAME = solReal.getVarValue("COAP_RESOURCE_NAME").toString()
+				val SERIAL_PORT = solReal.getVarValue("SERIAL_PORT").toString().trim('\'')
+				val FRONTEND_URL = solReal.getVarValue("FRONTEND_URL").toString().trim('\'')
 
 				robotSupport = RealRobotSupport(SERIAL_PORT)
 				//sonarSupport = RealSonarSupport()
@@ -52,7 +50,7 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 						//nothing
 					}
 				}
-				val grabber = ConsoleGrabberSupport(COAP_RESOURCE_NAME, COAP_HOSTNAME, COAP_PORT)
+				val grabber = ConsoleGrabberSupport(FRONTEND_URL)
 				classifierSupport = grabber
 				grabberSupport = grabber
 
