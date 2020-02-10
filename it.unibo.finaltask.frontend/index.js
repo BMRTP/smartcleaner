@@ -7,9 +7,12 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 
+app.use(express.json());
 
-var clients = []
-var updates = new Map()
+let clients = []
+let updates = new Map()
+
+let obstacle = ""
 
 
 detector.connect()
@@ -22,6 +25,26 @@ app.get('/style.css', function (req, res) {
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/public/index.html');
 })
+
+app.post('/obstacle', function(req, res){
+	console.log(req.body.img);
+	if (req.body.img) {
+		obstacle = req.body.img
+		res.sendStatus(200)
+		clients.forEach(c => c.emit('obstacle', { url: "/obstacle" }))
+	} else {
+		res.sendStatus(400)
+	}
+});
+
+app.get('/obstacle', function(req, res){
+	let img = Buffer.from(obstacle, 'base64');
+    res.writeHead(200, {
+		'Content-Type': "image/jpeg",
+        'Content-Length': img.length
+    });
+    res.end(img);
+});
   
 server.listen(8080, function () {
     console.log('Example app listening on port 8080!')
@@ -57,6 +80,7 @@ io.on('connection', function (socket) {
       }
     })
     updates.forEach((value, key, map) => socket.emit('update', {resource : key, value: value}))
+	socket.emit('obstacle', { url: "/obstacle" })
 
     socket.on('disconnect', function() {    
         var i = clients.indexOf(socket);
@@ -73,7 +97,6 @@ function observeProperties() {
     coapClient.observeProperty("detector/currentTask", coapUpdatesHandler)
     coapClient.observeProperty("detector/waitingForSupervisor", coapUpdatesHandler)
     coapClient.observeProperty("plasticbox/SpaceAvailable", coapUpdatesHandler)
-	coapClient.observeProperty("robot/cam", coapUpdatesHandler)
 }
 
 observeProperties()

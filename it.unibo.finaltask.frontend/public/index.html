@@ -120,11 +120,12 @@
             case 'plasticbox/SpaceAvailable':
                $("#plasticboxspace").html("Space Available: " + payload.value);
                break
-			case 'robot/cam':
-               $("#lastobstacleimg").attr('src', 'data:image/png;base64,'+ payload.value);
-               break
          }
       });
+	  
+	  server.on('obstacle', payload => {
+		$("#lastobstacleimg").attr('src', payload.url);
+	  });
 
 
       $("#explore").click(function () {

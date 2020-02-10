@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
+    "express-json": "^1.0.0",
     "net": "^1.0.2",
     "node-coap-client": "^1.0.2",
     "promise-socket": "^6.0.3",
