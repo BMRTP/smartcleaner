@@ -92,7 +92,6 @@ QActor detector context ctxDetector {
 	} Goto discoveryHome
 	
 	State discoveryHome {
-		println("STATE: discoveryHome")
 		println("waiting for a command...")	
 	}
 	Transition commandReceived
@@ -101,13 +100,11 @@ QActor detector context ctxDetector {
  			whenMsg terminate -> terminating
 	
 	State exploring { 
-		println("STATE: exploring")
 	  [ "currentTask = DetectorTask.EXPLORING
 		resource.setProperty(\"currentTask\", currentTask.toString()) "]
 	} Goto exploringWithPlan if "(completedPerimeter)" else continuePerimeter
 	
 	State updatePosition {
-		println("STATE: updatePosition")
 		["currentPosition = planner.getRobotPosition()
 		  if (currentPosition.first == 1 && currentPosition.second == 1 && currentTask == DetectorTask.EXPLORING) {
 				completedPerimeter = true
@@ -117,7 +114,6 @@ QActor detector context ctxDetector {
 	Goto exploringWithPlan if "(completedPerimeter || currentTask != DetectorTask.EXPLORING)" else continuePerimeter
 	 
 	State continuePerimeter {
-		println("STATE: continuePerimeter")
 		forward smartrobot -m cmd : cmd(d)
 		run planner.rotateRight90()
 		delay 1000
@@ -132,14 +128,12 @@ QActor detector context ctxDetector {
  		whenMsg terminate -> terminating
 	
 	State stepping {
-		println("STATE: doStep")
 		request smartrobot -m step : step($StepTime)
 	}
 	Transition t0   whenReply stepdone -> stepDone   
 					whenReply stepfail -> stepFailed
 	
 	State stepDone {  
-		println("STATE: stepDone")
  		run planner.updateMapAfterAheadOk()
 		[" RoomMap = planner.getMap()
 		   resource.setProperty(\"RoomMap\", RoomMap) "]		
@@ -148,7 +142,6 @@ QActor detector context ctxDetector {
 	Goto updatePosition
 	
 	State stepFailed {  
-		println("STATE: stepFailed")
  		onMsg(stepfail : stepfail(DURATION)) {
  			println("detector founds an obstacle after ${payloadArg(0)}")
  			["BackStepTime = payloadArg(0).toInt() - BackStepTimeCompensation"]
@@ -159,7 +152,6 @@ QActor detector context ctxDetector {
 		whenReply obstacletype -> checkObstacleType
     
     State checkObstacleType {
-    	println("STATE: checkObstacleType")
     	onMsg(obstacletype : obstacletype(X)) {
  			println("detector founds ${payloadArg(0)}")
  			["wasABottle = (payloadArg(0).contains(\"bottle\", ignoreCase = true))"]
@@ -184,11 +176,9 @@ QActor detector context ctxDetector {
     	whenReply stepdone -> backCompensationDone
     	
     State backCompensationDone {
-    	println("STATE: backCompensationDone")
     } Goto emptingBox if "(wasABottle)" else doNextStep
     
     State doNextStep {
-    	println("STATE: doNextStep")
     	if "(!completedPerimeter)" {
 	    	forward smartrobot -m cmd : cmd(a)
 	    	run planner.rotateLeft90()
@@ -198,7 +188,6 @@ QActor detector context ctxDetector {
     Goto doStep if "(!completedPerimeter)" else resetPlan
     	
     State bottleGrabbed {
-    	println("STATE: bottleGrabbed")
     	onMsg(grabbed : grabbed(X)) {
     		if "(payloadArg(0) == \"true\")" {
  				println("detector grabbed a bottle")
@@ -214,12 +203,10 @@ QActor detector context ctxDetector {
     	 whenReply stepdone -> doStep
   	
   	State resetPlan {
-  		println("STATE: resetPlan")
   		["plan = itunibo.planner.RobotPlan.empty()"]
   	} Goto exploringWithPlan
   	
   	State exploringWithPlan {
-  		println("STATE: exploringWithPlan")
   		if "(plan.isDone() && !planner.isRoomClean() && currentTask == DetectorTask.EXPLORING)" {
   		  [" val (x,y) = planner.getNextDirtyCell()
 		  	 plan = planner.getPlanMoves(x, y)
@@ -232,49 +219,40 @@ QActor detector context ctxDetector {
   	} Goto terminating if "(planner.isRoomClean() && currentTask == DetectorTask.EXPLORING)" else takeNextMove
   	
   	State takeNextMove {
-  		println("STATE: takeNextMove")
   		["nextMove = plan.getNextMove()"]
   	} Goto planDone if "(nextMove == itunibo.planner.PlanMove.NONE)" else checkW
   	
   	State planDone {
-  		println("STATE: planDone")
   	} Goto exploringWithPlan if "(currentTask == DetectorTask.EXPLORING)" else destinationReached
   	
   	State checkW {
-  		println("STATE: checkW")
   	} Goto doStep if "(nextMove == itunibo.planner.PlanMove.FORWARD)" else checkD
   	
   	State checkD {
-  		println("STATE: checkD")
   	} Goto rotateRight if "(nextMove == itunibo.planner.PlanMove.RIGHT)" else checkA
   	
   	State rotateRight {
-  		println("STATE: rotateRight")
   		forward smartrobot -m cmd : cmd(d)
 		run planner.rotateRight90()
 		delay 1000
   	} Goto exploringWithPlan
   	
   	State checkA {
-  		println("STATE: checkA")
   	} Goto rotateLeft if "(nextMove == itunibo.planner.PlanMove.LEFT)" else exploringWithPlan
   	
   	State rotateLeft {
-  		println("STATE: rotateLeft")
   		forward smartrobot -m cmd : cmd(a)
 	    run planner.rotateLeft90()
 	    delay 1000
   	} Goto exploringWithPlan
 	
 	State emptingBox {
-		println("STATE: emptingBox")
 		["currentTask = DetectorTask.EMPTING_BOX
 		  resource.setProperty(\"currentTask\", currentTask.toString()) 
  		  plan = planner.goPlasticBoxMoves() "]
 	} Goto exploringWithPlan
 	
 	State goingHome {
-		println("STATE: goingHome")
 		println("Detector going home")
 		["currentTask = DetectorTask.GOING_HOME
 		  resource.setProperty(\"currentTask\", currentTask.toString())
@@ -283,12 +261,10 @@ QActor detector context ctxDetector {
 	} Goto exploringWithPlan
 	
 	State terminating {
-		println("STATE: terminating")
 		println("Detector terminated the work")
 	} Goto goingHome if "(SpaceAvailable == NDB)" else goingPlasticBox
 	
 	State goingPlasticBox {
-		println("STATE: goingPlasticBox")
 		println("Detector going to plasticbox")
 		["currentTask = DetectorTask.EMPTING_BOX_TERMINATING
 		  resource.setProperty(\"currentTask\", currentTask.toString())
@@ -297,7 +273,6 @@ QActor detector context ctxDetector {
 	} Goto exploringWithPlan
 	
 	State emptingDetector {
-		println("STATE: emptingDetector")
 		[" waitingForSupervisor = false
 		   resource.setProperty(\"waitingForSupervisor\", waitingForSupervisor.toString())
 		   val Quantity = NDB - SpaceAvailable "]
@@ -306,7 +281,6 @@ QActor detector context ctxDetector {
 		whenReply throwed -> throwedBottles
 		
 	State throwedBottles {
-		println("STATE: throwedBottles")
 		onMsg(throwed : throwed(QUANTITY)) {
 			if "(payloadArg(0).toInt() == 0)" {
 				[" waitingForSupervisor = true
@@ -319,28 +293,23 @@ QActor detector context ctxDetector {
 	} Goto waitForSupervisorCommand if "(waitingForSupervisor)" else chooseDestination
 	
 	State chooseDestination {
-		println("STATE: chooseDestination")
 	} Goto goingHome if "(currentTask == DetectorTask.EMPTING_BOX_TERMINATING )" else goingLastPosition
 	
 	State goingLastPosition {
-		println("STATE: goingLastPosition")
 		["	currentTask = DetectorTask.GOING_BOTTLE
 			resource.setProperty(\"currentTask\", currentTask.toString())
 		  	plan = planner.getSafePlanMoves(lastPosition.first, lastPosition.second)	"]
 	} Goto exploringWithPlan
 	
 	State waitForSupervisorCommand {
-		println("STATE: waitForSupervisorCommand")
 		println("waiting for a command from supervisor...")
 	}
 	Transition t5
  		whenMsg continue -> emptingDetector
 	
 	State destinationReached {
-		println("STATE: destinationReached")
 	} Goto discoveryHome if "(currentTask == DetectorTask.GOING_HOME )" else destinationReached2
 	
 	State destinationReached2 {
-		println("STATE: destinationReached2")
 	} Goto exploring if "(currentTask == DetectorTask.GOING_BOTTLE )" else emptingDetector
 }
