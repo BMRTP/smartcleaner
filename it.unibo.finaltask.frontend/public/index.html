@@ -118,6 +118,7 @@
 </head>
 
 <body>
+   <audio id="notify" src="notify.mp3" type="audio/mpeg" hidden muted></audio>
    <div id="mainContainer">
       <div style="text-align:center;">
          <h3>Smartcleaner</h3>
@@ -252,11 +253,12 @@
       });
       
       server.on('obstacle', payload => {
+         console.log("sono stato chiamato")
          $("#isbottle").show();
          $("#notbottle").show();
          $("#lastobstacleimg").attr('src', payload.url);
          scrollTo("lastobstacleimg");
-         new Audio('notify.mp3').play();
+         play("notify");
       });
 
       $("#explore").click(function () {
@@ -283,29 +285,18 @@
       $("#isbottle").click(function () {
             console.log("isbottle");
             server.emit('command', { name: 'isbottle' })
-            scrollTo("mainContainer")
+            scrollTo("mainContainer");
+            $("#isbottle").hide();
+            $("#notbottle").hide();
       });
       
       $("#notbottle").click(function () {
             console.log("notbottle");
             server.emit('command', { name: 'notbottle' });
-            scrollTo("mainContainer")
-      });
-
-      $("#isbottle").click(function () {
-         console.log("isbottle");
-         server.emit('command', { name: 'isbottle' })
-         $("#isbottle").hide();
-         $("#notbottle").hide();
-      });
-
-      $("#notbottle").click(function () {
-         console.log("notbottle");
-         server.emit('command', { name: 'notbottle' })
-         $("#isbottle").hide();
-         $("#notbottle").hide();
-      });
-      
+            scrollTo("mainContainer");
+            $("#isbottle").hide();
+            $("#notbottle").hide();
+      });   
    });
    
 
@@ -348,10 +339,50 @@
       }
    }
 
+   function drawOnFlex(map) {
+      map = Array.from(map)
+      
+      var newMap = "<div class='mapRow'>"
+      
+      for(var i = 0; i < map.length; i++ ) {
+         if(map[i] === 'X') {
+            newMap += '<div class="item"><i class="fas fa-2x fa-times"></i></div>'
+         } else if (map[i] === '1') {
+            newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+         } else if (map[i] === '0') {
+            newMap += '<div class="item"><i class="fas fa-2x fa-question"></i></div>'
+         } else if (map[i] === 'r') {
+            newMap += '<div class="item"><i class="fab fa-2x fa-reddit-alien"></i></div>'
+         } else if (map[i] === ',' || map[i] === '|' || map[i] === ' ') {
+            //ignore
+         } else if (map[i] === '\n') { 
+            if(i == map.length)
+               newMap += '</div>'
+            else 
+               newMap += '</div><div class="mapRow">'
+         } else {
+            newMap += '<div class="item"><i class="far fa-2x fa-circle"></i></div>'
+         }
+      }
+      $("#mapContainer").html(newMap);
+   }
+
    function scrollTo(id) {
       $('html,body').animate({
          scrollTop: $('#'+id).offset().top
       },'slow');
+   }
+   
+   var firstTime = true // Avoid error on chrome 90+ where a media cannot be played without a user interaction first.
+   function play(id) {
+      var audio = document.getElementById(id);
+      if(firstTime) { 
+         firstTime = false
+         audio.muted = false
+      } else {
+         audio.currentTime = 0
+         audio.play();
+      }
    }
 </script>
 </html>
