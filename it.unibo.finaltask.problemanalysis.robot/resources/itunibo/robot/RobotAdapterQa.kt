@@ -24,13 +24,11 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 		} else {
 			val sol2 = pengine.solve("robotType(TYPE).")
 			val TYPE = sol2.getVarValue("TYPE").toString().trim('\'')
-			val solVirtual = pengine.solve("virtualRobot(VIRTUAL_PORT).")
-			val solReal = pengine.solve("realRobot(SERIAL_PORT, FRONTEND_URL).")
 			if (TYPE == "virtual") {
-
+				val solVirtual = pengine.solve("virtualRobot(VIRTUAL_PORT).")
 				val port = solVirtual.getVarValue("VIRTUAL_PORT").toString()
-
 				val virtualSupport = VirtualRobotSupport("localhost", port)
+
 				robotSupport = virtualSupport
 				grabberSupport = virtualSupport
 				sonarSupport = virtualSupport
@@ -39,10 +37,11 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 				println("Virtual robot started")
 
 			} else if (TYPE == "real") {
-
+				val solReal = pengine.solve("realRobot(SERIAL_PORT, FRONTEND_URL).")
 				val SERIAL_PORT = solReal.getVarValue("SERIAL_PORT").toString().trim('\'')
 				val FRONTEND_URL = solReal.getVarValue("FRONTEND_URL").toString().trim('\'')
-
+				val RASPISTILL_PARAM = solReal.getVarValue("RASPISTILL_PARAM").toString().trim('\'')
+				
 				robotSupport = RealRobotSupport(SERIAL_PORT)
 				//sonarSupport = RealSonarSupport()
 				sonarSupport = object : SonarSupport { //th sonar should be run externally
@@ -50,7 +49,7 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 						//nothing
 					}
 				}
-				val grabber = ConsoleGrabberSupport(FRONTEND_URL)
+				val grabber = ConsoleGrabberSupport(FRONTEND_URL, RASPISTILL_PARAM)
 				classifierSupport = grabber
 				grabberSupport = grabber
 
@@ -70,39 +69,38 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 	}
 
 
-
-suspend fun handleDistance(distance: Double) {
-	mySelf.emit("sonar", "sonar($distance)");
-}
-
-override suspend fun actorBody(msg: ApplMessage) {
-	if (msg.isDispatch() && msg.msgId() == "cmd") {
-		val move = (Term.createTerm(msg.msgContent()) as Struct).getArg(0).toString()
-		robotSupport.move(move)
+	suspend fun handleDistance(distance: Double) {
+		mySelf.emit("sonar", "sonar($distance)");
 	}
 
-	if (msg.isRequest() && msg.msgId() == "grab") {
-		val result = grabberSupport.grab().toString()
-		replyWith("grabbed", result, msg);
+	override suspend fun actorBody(msg: ApplMessage) {
+		if (msg.isDispatch() && msg.msgId() == "cmd") {
+			val move = (Term.createTerm(msg.msgContent()) as Struct).getArg(0).toString()
+			robotSupport.move(move)
+		}
+
+		if (msg.isRequest() && msg.msgId() == "grab") {
+			val result = grabberSupport.grab().toString()
+			replyWith("grabbed", result, msg);
+		}
+
+		if (msg.isRequest() && msg.msgId() == "getobstacletype") {
+			classifierSupport.classify({
+				replyWith("obstacletype", it, msg);
+			})
+		}
+
+		if (msg.isRequest() && msg.msgId() == "suggestobstacletype") {
+			val suggestion = (Term.createTerm(msg.msgContent()) as Struct).getArg(0).toString()
+			classifierSupport.suggest(suggestion)
+		}
+
 	}
 
-	if (msg.isRequest() && msg.msgId() == "getobstacletype") {
-		classifierSupport.classify({
-			replyWith("obstacletype", it, msg);
-		})
+	fun replyWith(messageId: String, value: String, request: ApplMessage) {
+		val reply = MsgUtil.buildReply(mySelf.name, messageId, "$messageId($value)", request.msgSender())
+		mySelf.scope.launch { mySelf.sendMessageToActor(reply, request.msgSender(), request.conn) }
 	}
-
-	if (msg.isRequest() && msg.msgId() == "suggestobstacletype") {
-		val suggestion = (Term.createTerm(msg.msgContent()) as Struct).getArg(0).toString()
-		classifierSupport.suggest(suggestion)
-	}
-
-}
-
-fun replyWith(messageId: String, value: String, request: ApplMessage) {
-	val reply = MsgUtil.buildReply(mySelf.name, messageId, "$messageId($value)", request.msgSender())
-	mySelf.scope.launch { mySelf.sendMessageToActor(reply, request.msgSender(), request.conn) }
-}
 }
 
 
