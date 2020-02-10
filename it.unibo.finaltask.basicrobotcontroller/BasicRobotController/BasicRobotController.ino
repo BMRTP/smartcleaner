@@ -45,6 +45,7 @@ float rotate_target_angle = 0;
 long rotating_start = 0;
 char lastMovementCmd = '?';
 long forwarding_time = seconds(4.0), rotating_time = seconds(2);
+long forward_start_time = now();
 
 int forward_power = 255;
 int rotate_power = 255;
@@ -140,7 +141,11 @@ void handleCommands() {
    
     if(v == 'h') {
       if(stateMachine->getState() == FORWARDING) { //keep goin straight while decelerating
-        forward(-forward_direction, 0, seconds(0.1));
+        float forward_total_time = toSeconds(now() - forward_start_time);
+        float x = forward_total_time / 0.7f;              //X normalization
+        float y = (1.0f)/(1.0f+pow(2.718f,(0.5f-x)*10));  //sigmoid
+        float brake_time = y * 0.1f;                      //y normalization
+        forward(-forward_direction, 0, seconds(brake_time));
         //keep_position(seconds(1));
       } else {                                     //no need to counter rotate
         shutdown_motors();
@@ -218,6 +223,7 @@ void forward(float direction, float target_angle, long duration) {
   if(direction > 0) {//TODO remove
     mpu6050->resetAngles(); //TODO remove
   }//TODO remove
+  forward_start_time = now();
 }
 void rotate(float direction, float target_angle, long duration, bool resetAngles) {
   stateMachine->transition(ROTATE);
