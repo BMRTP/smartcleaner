@@ -92,6 +92,8 @@ QActor detector context ctxDetector {
 	} Goto discoveryHome
 	
 	State discoveryHome {
+	   [ "currentTask = DetectorTask.IDLE
+		  resource.setProperty(\"currentTask\", currentTask.toString()) "]
 		println("waiting for a command...")	
 	}
 	Transition commandReceived
