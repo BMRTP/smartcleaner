@@ -12,6 +12,7 @@
 !it.unibo.finaltask.project.plasticbox/build.gradle
 !it.unibo.finaltask.project.robot/build.gradle
 !it.unibo.finaltask.project.robot/basicRobotConfig.pl
+!it.unibo.finaltask.project.robot/hw_dependent_code/**
 !it.unibo.finaltask.project.wroom/build.gradle
 !it.unibo.finaltask.project.wroom/basicRobotConfig.pl
 
