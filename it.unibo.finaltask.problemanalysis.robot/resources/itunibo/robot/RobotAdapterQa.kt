@@ -24,22 +24,20 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 		} else {
 			val sol2 = pengine.solve("robotType(TYPE).")
 			val TYPE = sol2.getVarValue("TYPE").toString().trim('\'')
-			val solVirtual = pengine.solve("virtualRobot(VIRTUAL_PORT).")
-			val solReal = pengine.solve("realRobot(SERIAL_PORT, FRONTEND_URL).")
 			if (TYPE == "virtual") {
-
+				val solVirtual = pengine.solve("virtualRobot(VIRTUAL_PORT).")
 				val port = solVirtual.getVarValue("VIRTUAL_PORT").toString()
-
 				val virtualSupport = VirtualRobotSupport("localhost", port)
+				
 				robotSupport = virtualSupport
 				grabberSupport = virtualSupport
 				sonarSupport = virtualSupport
 				classifierSupport = virtualSupport
-
+				
 				println("Virtual robot started")
 
 			} else if (TYPE == "real") {
-
+				val solReal = pengine.solve("realRobot(SERIAL_PORT, FRONTEND_URL).")
 				val SERIAL_PORT = solReal.getVarValue("SERIAL_PORT").toString().trim('\'')
 				val FRONTEND_URL = solReal.getVarValue("FRONTEND_URL").toString().trim('\'')
 
