@@ -14,18 +14,20 @@ import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.StringEntity
 
 
-class ConsoleGrabberSupport(frontEndUrl: String) :
+class ConsoleGrabberSupport(frontEndUrl: String, raspiStillParams: String) :
 	GrabberSupport,
 	ClassifierSupport {
 
 	var lastObstacle: String = "nothing"
 	var handler: (String) -> Unit = { _ -> }
 	val frontEndUrl: String
+	val raspiStillParams: String
 
 	init {
 
 		println("ConsoleGrabberSupport started with $frontEndUrl")
 		this.frontEndUrl = frontEndUrl
+		this.raspiStillParams = raspiStillParams
 	}
 
 	override fun grab(): Boolean {
@@ -41,7 +43,7 @@ class ConsoleGrabberSupport(frontEndUrl: String) :
 			val cmd = arrayOf(
 				"/bin/sh",
 				"-c",
-				"raspistill -vf -hf -o - | base64 -w 0 ; echo -e \"\\n\""
+				"raspistill $this.raspiStillParams -o - | base64 -w 0 ; echo -e \"\\n\""
 			)
 			val p = Runtime.getRuntime().exec(cmd);
 			val input = p.getInputStream();
