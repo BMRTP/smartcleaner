@@ -25,4 +25,6 @@
 !it.unibo.finaltask.frontend/public/**
 !it.unibo.finaltask.frontend/*
 
+!it.unibo.finaltask.robotframe/*
+
 !it.unibo.finaltask.requirements/test/**
