@@ -8,19 +8,19 @@
 /.metadata/
 
 !it.unibo.finaltask.coapserver/build.gradle
-!it.unibo.finaltask.problemanalysis.detector/build.gradle
-!it.unibo.finaltask.problemanalysis.plasticbox/build.gradle
-!it.unibo.finaltask.problemanalysis.robot/build.gradle
-!it.unibo.finaltask.problemanalysis.robot/basicRobotConfig.pl
-!it.unibo.finaltask.problemanalysis.wroom/build.gradle
-!it.unibo.finaltask.problemanalysis.wroom/basicRobotConfig.pl
+!it.unibo.finaltask.project.detector/build.gradle
+!it.unibo.finaltask.project.plasticbox/build.gradle
+!it.unibo.finaltask.project.robot/build.gradle
+!it.unibo.finaltask.project.robot/basicRobotConfig.pl
+!it.unibo.finaltask.project.wroom/build.gradle
+!it.unibo.finaltask.project.wroom/basicRobotConfig.pl
 
 
-!it.unibo.finaltask.problemanalysis.test/build.gradle
-!it.unibo.finaltask.problemanalysis.test/settings.gradle
-!it.unibo.finaltask.problemanalysis.test/src/**
-!it.unibo.finaltask.problemanalysis.test/test/**
-!it.unibo.finaltask.problemanalysis.test/resources/**
+!it.unibo.finaltask.project.test/build.gradle
+!it.unibo.finaltask.project.test/settings.gradle
+!it.unibo.finaltask.project.test/src/**
+!it.unibo.finaltask.project.test/test/**
+!it.unibo.finaltask.project.test/resources/**
 !it.unibo.finaltask.frontend/supports/**
 !it.unibo.finaltask.frontend/public/**
 !it.unibo.finaltask.frontend/*
