@@ -23,6 +23,10 @@ detector.connect()
 plasticbox.connect()
 robot.connect()
 
+app.get('/notify.mp3', function (req, res) {
+    res.sendFile(__dirname + '/public/notify.mp3');
+})
+
 app.get('/style.css', function (req, res) {
     res.sendFile(__dirname + '/public/style.css');
 })

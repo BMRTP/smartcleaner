@@ -71,93 +71,104 @@
    </body>
 
    <script>
-		$("#advanceddiv").toggle()
-   
-      var server = io()
-      drawing = new Image();
-      drawing.src = "https://cdn.iconscout.com/icon/premium/png-256-thumb/vacuum-1671324-1418626.png"
-      
-      $("#mapCheckbox").change(function() { 
-         $("#myCanvas").toggle()
-         $("#mapContainer").toggle()
-      });
-	  
-      $("#advancedCheckbox").change(function() { 
-         $("#advanceddiv").toggle()
-      });
-   
-      server.on('update', function (payload) {
-         //{ resource: resource, value: value}
-         switch (payload.resource) {
-            case 'detector/RoomMap':
-               $("#map").html(payload.value.replace(/\n/g, "<br />"))
-               let map = payload.value
-               console.log(map)
-               drawOnFlex(map)
-               drawOnCanvas(map)
-               break
-            case 'detector/SpaceAvailable':
-               $("#detectorspace").html("Space Available: " + payload.value);
-               break
-            case 'detector/currentTask':
-               $("#currenttask").html("Robot is: " + payload.value);
-               break
-            case 'detector/waitingForSupervisor':
-               if (payload.value === "true") {
-                  $("#waitingsupervisor").html("Robot is waiting for supervisor");
-                  $("#continue").show();
-                  $("#explore").hide();
-                  $("#suspend").hide();
-                  $("#terminate").hide();
-               } else {
-                  $("#waitingsupervisor").html("");
-                  $("#continue").hide();
-                  $("#explore").show();
-                  $("#suspend").show();
-                  $("#terminate").show();
+      $(function() {
+
+            var server = io()
+            drawing = new Image();
+            drawing.src = "https://cdn.iconscout.com/icon/premium/png-256-thumb/vacuum-1671324-1418626.png"
+
+            $("#advanceddiv").toggle()
+
+            $("#mapCheckbox").change(function() { 
+               $("#myCanvas").toggle()
+               $("#mapContainer").toggle()
+            });
+         
+            $("#advancedCheckbox").change(function() { 
+               $("#advanceddiv").toggle()
+            });
+
+
+         
+            server.on('update', function (payload) {
+               //{ resource: resource, value: value}
+               switch (payload.resource) {
+                  case 'detector/RoomMap':
+                     $("#map").html(payload.value.replace(/\n/g, "<br />"))
+                     let map = payload.value
+                     console.log(map)
+                     drawOnFlex(map)
+                     drawOnCanvas(map)
+                     break
+                  case 'detector/SpaceAvailable':
+                     $("#detectorspace").html("Space Available: " + payload.value);
+                     break
+                  case 'detector/currentTask':
+                     $("#currenttask").html("Robot is: " + payload.value);
+                     break
+                  case 'detector/waitingForSupervisor':
+                     if (payload.value === "true") {
+                        $("#waitingsupervisor").html("Robot is waiting for supervisor");
+                        $("#continue").show();
+                        $("#explore").hide();
+                        $("#suspend").hide();
+                        $("#terminate").hide();
+                     } else {
+                        $("#waitingsupervisor").html("");
+                        $("#continue").hide();
+                        $("#explore").show();
+                        $("#suspend").show();
+                        $("#terminate").show();
+                     }
+                     break
+                  case 'plasticbox/SpaceAvailable':
+                     $("#plasticboxspace").html("Space Available: " + payload.value);
+                     break
                }
-               break
-            case 'plasticbox/SpaceAvailable':
-               $("#plasticboxspace").html("Space Available: " + payload.value);
-               break
-         }
-      });
-	  
-	  server.on('obstacle', payload => {
-		$("#lastobstacleimg").attr('src', payload.url);
-	  });
+            });
+         
+         server.on('obstacle', payload => {
+            $("#lastobstacleimg").attr('src', payload.url);
+            scrollTo("lastobstacleimg")
+            new Audio('notify.mp3').play();
+         });
 
 
-      $("#explore").click(function () {
-         console.log("explore");
-         server.emit('command', { name: 'explore' })
+            $("#explore").click(function () {
+               console.log("explore");
+               server.emit('command', { name: 'explore' })
+            });
+            $("#suspend").click(function () {
+               console.log("suspend");
+               server.emit('command', { name: 'suspend' })
+            });
+            $("#terminate").click(function () {
+               console.log("terminate");
+               server.emit('command', { name: 'terminate' })
+            });
+            $("#continue").click(function () {
+               console.log("continue");
+               server.emit('command', { name: 'continue' })
+            });
+            $("#empty").click(function () {
+               console.log("empty");
+               server.emit('command', { name: 'empty' })
+            });
+         
+         $("#isbottle").click(function () {
+               console.log("isbottle");
+               server.emit('command', { name: 'isbottle' })
+               scrollTo("mainContainer")
+            });
+         
+         $("#notbottle").click(function () {
+               console.log("notbottle");
+               server.emit('command', { name: 'notbottle' });
+               scrollTo("mainContainer")
+            });
+         
       });
-      $("#suspend").click(function () {
-         console.log("suspend");
-         server.emit('command', { name: 'suspend' })
-      });
-      $("#terminate").click(function () {
-         console.log("terminate");
-         server.emit('command', { name: 'terminate' })
-      });
-      $("#continue").click(function () {
-         console.log("continue");
-         server.emit('command', { name: 'continue' })
-      });
-      $("#empty").click(function () {
-         console.log("empty");
-         server.emit('command', { name: 'empty' })
-      });
-	  
-	  $("#isbottle").click(function () {
-         console.log("isbottle");
-         server.emit('command', { name: 'isbottle' })
-      });
-	  
-	  $("#notbottle").click(function () {
-         console.log("notbottle");
-         server.emit('command', { name: 'notbottle' })
-      });
+      
    
       function drawOnCanvas(mapString) {
          var canvas = document.getElementById('myCanvas');
@@ -223,5 +234,13 @@
             }
             $("#mapContainer").html(newMap);
          }
+
+
+         function scrollTo(id) {
+            $('html,body').animate({
+               scrollTop: $('#'+id).offset().top
+            },'slow');
+         }
+         
    </script>
 </html>
