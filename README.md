@@ -29,11 +29,12 @@ Launch `gradle run`, stricly in order within the following folders:
 
 To deploy the project on the real robot you have to make a little extra effort.
 
-First, create executable jars through `gradle   -b build_ctxWRoom.gradle distZip` for projects:
-- `it.unibo.finaltask.project.wroom` 
-- `itunibo.robot.***sonar` 
-Move the generated jars into a folder on the physical robot along side the *.pl and *.c files. The prolog files need to be edited appropriately in such a way that the robot can reach the other node of the system and vice versa (mainly ip addresses and port). Execute the jar files and enjoy.
-
+First, create executable jars through  for projects:
+- `gradle -b build_ctxWRoom.gradle distZip` within `it.unibo.finaltask.project.wroom` folder
+- `gradle -b build_ctxRobot.gradle distZip` within `it.unibo.finaltask.project.robot`   
+Move the generated jars into a folder on the physical robot along side the *.pl and *.c files. The prolog files need to be edited appropriately in such a way that the robot can reach the other node of the system and vice versa (mainly ip addresses and port).  
+Compile *.c files, be sure the compiled objects have the same file name as the source ones.  
+Execute the jar files and enjoy.   
 ______
 
 Made with love by  
