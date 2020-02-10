@@ -24,7 +24,7 @@ Reply   throwed : throwed(QUANTITY)
 Dispatch init : init(NDB, WITHMAP)
 
 Context ctxDetector ip [ host= "localhost" port= 8022 ]  
-Context ctxRobot ip [ host= "192.168.1.177" port= 8018 ]  
+Context ctxRobot ip [ host= "192.168.137.100" port= 8018 ]  
 Context ctxPlasticBox ip [ host= "127.0.0.1" port= 8016 ]
 
 ExternalQActor smartrobot context ctxRobot
@@ -51,8 +51,11 @@ QActor detector context ctxDetector {
 	   val mapname     = \"roomMbot3\"
 
 	   //VIRTUAL ROBOT
-       var StepTime = 330
+       //var StepTime = 330
+	   var StepTime = 700
 	   var BackStepTime = 0
+       //val BackStepTimeCompensation = 20
+	   val BackStepTimeCompensation = 2000
 	   var completedPerimeter = false
 	   var wasABottle = false
 
@@ -148,7 +151,7 @@ QActor detector context ctxDetector {
 		println("STATE: stepFailed")
  		onMsg(stepfail : stepfail(DURATION)) {
  			println("detector founds an obstacle after ${payloadArg(0)}")
- 			["BackStepTime = payloadArg(0).toInt() - 20"] //TODO tune compensation
+ 			["BackStepTime = payloadArg(0).toInt() - BackStepTimeCompensation"]
  			request obstacleclassifier -m getobstacletype : getobstacletype(type)
  		}
 	}

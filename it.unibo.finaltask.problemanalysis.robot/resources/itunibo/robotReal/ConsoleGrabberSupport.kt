@@ -43,8 +43,9 @@ class ConsoleGrabberSupport(frontEndUrl: String, raspiStillParams: String) :
 			val cmd = arrayOf(
 				"/bin/sh",
 				"-c",
-				"raspistill $this.raspiStillParams -o - | base64 -w 0 ; echo -e \"\\n\""
+				"raspistill ${this.raspiStillParams} -o - | base64 -w 0 ; echo -e \"\\n\""
 			)
+			println(cmd[2]);
 			val p = Runtime.getRuntime().exec(cmd);
 			val input = p.getInputStream();
 			val buffer = StringBuilder(3500000);
@@ -86,6 +87,7 @@ class ConsoleGrabberSupport(frontEndUrl: String, raspiStillParams: String) :
 
 	override fun suggest(obstacle: String) {
 		println("A suggestion was received: obstacle is " + obstacle)
+		lastObstacle = obstacle
 		handler(lastObstacle)
 		handler = { _ -> }
 	}

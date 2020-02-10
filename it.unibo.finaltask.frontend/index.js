@@ -18,6 +18,7 @@ let updates = new Map()
 let obstacle = defaultimg.img
 
 
+
 detector.connect()
 plasticbox.connect()
 robot.connect()
@@ -34,7 +35,7 @@ app.post('/obstacle', function(req, res){
 	if (req.body.img) {
 		obstacle = req.body.img
 		res.sendStatus(200)
-		clients.forEach(c => c.emit('obstacle', { url: "/obstacle" }))
+		clients.forEach(c => c.emit('obstacle', { url: getObstacleUrl() }))
 	} else {
 		res.sendStatus(400)
 	}
@@ -83,7 +84,7 @@ io.on('connection', function (socket) {
       }
     })
     updates.forEach((value, key, map) => socket.emit('update', {resource : key, value: value}))
-	socket.emit('obstacle', { url: "/obstacle" })
+	socket.emit('obstacle', { url: getObstacleUrl() })
 
     socket.on('disconnect', function() {    
         var i = clients.indexOf(socket);
@@ -108,4 +109,8 @@ function coapUpdatesHandler(resource, value) {
     //console.log("Resource: " + resource + " value: " + value)
     updates.set(resource, value)
     clients.forEach(c => c.emit('update', { resource: resource, value: value}))
+}
+
+function getObstacleUrl() {
+	return '/obstacle?date=' + (new Date().getTime())
 }

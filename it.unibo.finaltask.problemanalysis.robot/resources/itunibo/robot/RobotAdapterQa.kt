@@ -37,7 +37,7 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 				println("Virtual robot started")
 
 			} else if (TYPE == "real") {
-				val solReal = pengine.solve("realRobot(SERIAL_PORT, FRONTEND_URL).")
+				val solReal = pengine.solve("realRobot(SERIAL_PORT, FRONTEND_URL, RASPISTILL_PARAM).")
 				val SERIAL_PORT = solReal.getVarValue("SERIAL_PORT").toString().trim('\'')
 				val FRONTEND_URL = solReal.getVarValue("FRONTEND_URL").toString().trim('\'')
 				val RASPISTILL_PARAM = solReal.getVarValue("RASPISTILL_PARAM").toString().trim('\'')
@@ -90,7 +90,7 @@ class RobotAdapterQa(name: String) : ActorBasic(name) {
 			})
 		}
 
-		if (msg.isRequest() && msg.msgId() == "suggestobstacletype") {
+		if (msg.isDispatch() && msg.msgId() == "suggestobstacletype") {
 			val suggestion = (Term.createTerm(msg.msgContent()) as Struct).getArg(0).toString()
 			classifierSupport.suggest(suggestion)
 		}
