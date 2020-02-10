@@ -26,5 +26,6 @@
 !it.unibo.finaltask.frontend/*
 
 !it.unibo.finaltask.robotframe/*
+!it.unibo.finaltask.basicrobotcontroller/BasicRobotController/*
 
 !it.unibo.finaltask.requirements/test/**
