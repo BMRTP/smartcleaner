@@ -10,7 +10,7 @@ repositories {
    }
 }
 
-mainClassName = 'it.unibo.finaltask.problemanalysis.test.Main'
+mainClassName = 'it.unibo.finaltask.project.test.Main'
 
 sourceSets {
     main.java.srcDirs += 'src'

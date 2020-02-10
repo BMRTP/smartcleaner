@@ -1,4 +1,4 @@
-package it.unibo.finaltask.problemanalysis.test;
+package it.unibo.finaltask.project.test;
 
 public class Main {
 
