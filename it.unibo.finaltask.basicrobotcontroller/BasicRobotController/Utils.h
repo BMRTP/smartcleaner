@@ -4,6 +4,7 @@
 bool isExpired(long start_time, long duration);
 long now();
 long seconds(float s);
+float toSeconds(long l);
 
 int sign(double v);
 int sign(float v);

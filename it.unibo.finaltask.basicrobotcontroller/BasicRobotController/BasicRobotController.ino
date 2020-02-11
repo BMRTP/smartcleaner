@@ -166,10 +166,14 @@ void handleCommands() {
     } else if(v == 'o') {
       keep_position(seconds(60));
       Serial.println("o");
-    } else if(v == 'p') {
+    } else if(v == 'r') {
        int p = between(0, 255, Serial.parseInt());
-       Serial.print("Max power output: "); Serial.println(p);
-       motors->maxPWMOutput(p);
+       Serial.print("Max power output (rotation): "); Serial.println(p);
+       rotate_power = p;
+    } else if(v == 'f') {
+       int p = between(0, 255, Serial.parseInt());
+       Serial.print("Max power output (forward): "); Serial.println(p);
+       forward_power = p;
     } else if(v == 't') {
       if(stateMachine->getState() == FORWARDING && forward_direction == AHEAD) {
         forward_target_angle = Serial.parseInt();

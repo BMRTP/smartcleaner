@@ -202,7 +202,6 @@
             case 'detector/RoomMap':
                $("#map").html(payload.value.replace(/\n/g, "<br />"))
                let map = payload.value
-               console.log(map)
                drawOnFlex(map)
                drawOnCanvas(map)
                break

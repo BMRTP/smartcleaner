@@ -11,6 +11,9 @@ long now() {
 long seconds(float s) {
   return (long)(s * 1000000);
 }
+float toSeconds(long l) {
+  return l / 1000000.0f;
+}
 int sign(double v) {
   return SIGN_EXPR(v);
 }
